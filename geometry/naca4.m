@@ -1,9 +1,12 @@
 function [prf] = naca4(prf,nums)
+%NACA4 erstellt Knoten des Profils
+%   Speichert im profile-struct die Knoten Koordinaten prf.nodes.X und
+%   prf.nodes.Y und die gesamte Knotenanzahl prf.M
 
 c=prf.c;
-m=nums(1)/100;
-p=nums(2)/10;
-t=(nums(3)*10+nums(4))/100;
+m=nums(1)/100;  %Profilwölbung
+p=nums(2)/10;   %Wölbungsrücklage
+t=(nums(3)*10+nums(4))/100; % Verhältnis Profildicke zu Sehnenlänge
 
 a=3;
 x = 0.5*c*(tanh(a*(2*((0:(prf.N-1)))/(prf.N-1)-1))/tanh(a))+0.5*c;%linspace(0,1,prf.N);
