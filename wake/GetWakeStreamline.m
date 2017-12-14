@@ -1,5 +1,6 @@
 function [wake] = GetWakeStreamline( fld,prf,NW ,grading)
-%GETWAKESTREAMLINE  calculates the noedes on the wake streamline. finds points where psi-psi0 goes to zero -> Sekanten method
+%GETWAKESTREAMLINE  calculates the noedes on the wake streamline. 
+%                   Finds points where psi-psi0 goes to zero -> Sekantenmethode
 %                   NW: number of wake nodes
 %                   grading: default set to 1.18
 
@@ -9,27 +10,27 @@ grading=1.18;
 end
 
 %        calculate TE midpoint as first wake node
-psi0=fld.psi0;
 x1=[prf.panels.X(end,2) prf.panels.Y(end,2)]; 
 xN=[prf.panels.X(end,1) prf.panels.Y(end,1)];
 
 xTE= (x1+xN)/2; % Midpoint of TE
 
+%psi0=fld.psi0;
+psi0=evaluateInviscFieldSol(xTE,fld,prf,'without TE');
+
+
 %        calculate first wake tangent vector
 %           -> mean of tangent vectors of first and N-th panel 
-
-%e=(x1-xN)/norm(x1-xN); % Tangent vector of TE panel
-
-
-e1=[prf.panels.X(1,2), prf.panels.Y(1,2)]-[prf.panels.X(1,1), prf.panels.Y(1,1)]; 
-e1=e1/norm(e1);
-eN=[prf.panels.X(end-1,2), prf.panels.Y(end-1,2)]-[prf.panels.X(end-1,1) prf.panels.Y(end-1,1)]; 
-eN=eN/norm(eN);
+e1=prf.panels.e(1,:);
+eN=prf.panels.e(end-1,:);
 s=0.5*(eN-e1);
 %if s(1)<0; s=-s; end;
 
+
+
+
 % starting step size of wake equals the Panel length of first panel
-h=sqrt( (prf.panels.X(1,2)-prf.panels.X(1,1)).^2 +(prf.panels.Y(1,2)-prf.panels.Y(1,1)).^2 );
+h=prf.panels.L(1);
 
 % guess second wake point
 guess= xTE+2.5*h*s;
@@ -42,30 +43,30 @@ lw=zeros(NW-1,1);
 dy=30*abs(h*s(2));
 
 for i=1:NW-1 % each node of wake
-    psig=evaluateInviscFieldSol(guess,fld,prf);
+    psig=evaluateInviscFieldSol(guess,fld,prf,'without TE');
     found=false;k=1;
     
     % find point on wake streamline -> psi=psi0
     
     % Einschlussintervall finden
     %------------------------------------------------
-    while found==false && k<8 % prevent endless loop
-        psip=evaluateInviscFieldSol(guess+[0, k*dy],fld,prf);
+    while found==false && k<20 % prevent endless loop
+        psip=evaluateInviscFieldSol(guess-[0, k*dy],fld,prf,'without TE');
         d1=psig-psi0;
         d2=psip-psi0;
         if sign(d1)*d2 < 0 % Einschlussintervall gefunden
           psi1=psig;
           psi2=psip;
           found=true;
-          y2=guess(2)+k*dy;
+          y2=guess(2)-k*dy;
         else
-          psim=evaluateInviscFieldSol(guess-[0, k*dy],fld,prf);  
-          d2=psip-psi0;  
+          psim=evaluateInviscFieldSol(guess+[0, k*dy],fld,prf,'without TE');  
+          d2=psim-psi0;  
           if sign(d1)*d2 < 0 % Einschlussintervall gefunden
             psi1=psig;
             psi2=psim;  
             found=true;
-            y2=guess(2)-k*dy;
+            y2=guess(2)+k*dy;
           end
         end
         k=k+1;   
@@ -75,10 +76,13 @@ for i=1:NW-1 % each node of wake
     dn=1; l=0;
     % Sekanten Methode
     %------------------------------------------------
-    while  abs(dn)>4e-5 && l<7% residuum
+    res=1e-11; % residuum
+    while  abs(dn)>res && l<40 % prevent endless loop
+        d1=psi1-psi0;
+        d2=psi2-psi0;
         yn=(abs(d1)*y2+abs(d2)*y1) /(abs(d1)+abs(d2));
         new=[guess(1), yn];
-        psin=evaluateInviscFieldSol(new,fld,prf);
+        psin=evaluateInviscFieldSol(new,fld,prf,'without TE');
         dn=psin-psi0;
         if sign(dn)*d1<0
            psi2=psin;
@@ -102,12 +106,17 @@ end
 ew=(xw(2:end,:)-xw(1:end-1,:));ew=[ew(:,1)./lw, ew(:,2)./lw];
 nw=[ew(:,2),-ew(:,1)];
 
+% normal vector of node -> mean value of panel normal vectors
+nwn=(nw(1:end-1,:)+nw(2:end,:))/2;nwn=[nw(1,:);nwn; nw(end,:)];
+
+
 wake.x=xw(:,1);
 wake.y=xw(:,2);
 wake.e=ew;
 wake.n=nw;
 wake.L=lw;
 wake.s=sw;
+wake.nn=nwn;
 %{
 for i=1:NW-1
     st= false;

@@ -4,6 +4,7 @@ function [D] = MassDefCoeff(B, s,verf)
 %               default: using forward differences
 %               if verf is committed, using central differences
 
+%m=length(B(1,:));
 n=length(B(:,1));
 
 if nargin==2
@@ -11,13 +12,13 @@ if nargin==2
     tmp=1./(s(2:end)-s(1:end-1)); 
     tmp=ones(n,1)*tmp;
     
-    C1=[tmp(:,1:end).*B(:,1:end-1), zeros(n,1)];
+    C1=[tmp.*B(:,1:end-1), zeros(n,1)];
     C2=[zeros(n,1), tmp.*B(:,1:end-1)];
     D=C2-C1;   % all terms of forward differencing q_j=2,..,n-1
                %    -> D_ij=B_ij-1/(s_j-s_j-1) - B_ij/(s_j+1-s_j) , j=2...n-1
                
     % last source contribution with backwards diff 
-    % -> XFoil: q_N+Nw = 0 -> weglassen
+    % -> XFoil: q_N = q_N+Nw = 0 -> weglassen
    % last= tmp(:,end).*B(:,end);
    % D(:,end-1:end)=D(:,end-1:end)+[-last, last];
 

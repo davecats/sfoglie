@@ -1,117 +1,93 @@
-function [dpsi_dq,du_dq] = WakeSourceCoeffs( wake , xi, n)
-%WAKESOURCECOEFFS  calculates coefficients of contribution of the wake source
-%                    -on the airfoil B_ij=dpsi_dq
-%                    -on the airfoil Cq_ij=du_dq
-%                  source is linear for the wake !!!!
+function [ Bwake, Cqwake ] = WakeSourceCoeffs( wake,prf )
+%WAKESOURCECOEFFS   calculates 
+%                      Bwake=Bij,  i=1,..,N j=N+1,..,N+NW
+%                           -> influence of wake sources on airfoil node Eqs
+%                      Cqwake=Cij,  i=N+1,..,N+NW j=N+1,..,N+NW
+%                           -> influence of wake sources on wake node Eqs
 
-NW=length(wake.x);% number of nodes
-L=wake.L;
-t= wake.e; %tangential vectors
 
-dpsi_dq=zeros(1,NW);
-du_dq=zeros(1,NW);
+e=prf.panels.e(1:end,:);
+nw=wake.n;
+ew=wake.e;
 
-for k=1:NW-1
 
-    r1=[xi(1);xi(2)]-[wake.x(k);wake.y(k)];% relativ vector
+NW=evalin('base','NW');%length(wake.x);
+N=evalin('base','N');
 
-    % calculate local coordinates
-    Y=wake.n(k,:)*r1;
-    X1=wake.e(k,:)*r1;
-    XM=X1-L(k)/2;
-    X2=X1-L(k);
+% all nodes on wake and airfoil
+xn=[transpose(prf.nodes.X), transpose(prf.nodes.Y)];
+xn=[xn; wake.x, wake.y];
 
-    rM=sqrt(XM^2+Y^2);
-    r1=sqrt(X1^2+Y^2);
-    r2=sqrt(X2^2+Y^2);
+% Panel node 1 and 2 coordinates on wake
+xp1=wake.x(1:end-1,1);
+yp1=wake.y(1:end-1,1);
+xp2=wake.x(2:end,1);
+yp2=wake.y(2:end,1);
 
-     sgnM=sign(XM);sgn1=sign(X1); sgn2=sign(X2);
-     if rM<1e-10; lnrM=0; tM=0;  else lnrM=log(rM);  tM=atan2(sgnM*XM,sgnM*Y)+pi/2*(1-sgnM); end
-     if r1<1e-10; lnr1=0; t1=0;  else lnr1=log(r1);  t1=atan2(sgn1*X1,sgn1*Y)+pi/2*(1-sgn1); end
-     if r2<1e-10; lnr2=0; t2=0;  else lnr2=log(r2);  t2=atan2(sgn2*X2,sgn2*Y)+pi/2*(1-sgn2); end
-    tM=tM- InvAngle(atan2(-t(1),t(2) )+pi);
-    t1=t1- InvAngle(atan2(-t(1),t(2) )+pi);
-    t2=t2- InvAngle(atan2(-t(1),t(2) )+pi);
 
-    % first panel half
-    %--------------------------------------------------
-    
-    % dpsi_dq
-    pp=(XM*tM-X1*t1+Y*(lnr1-lnrM));
-    pm=((X1+XM)*pp+r1^2*t1-rM^2*tM+Y*(XM-X1))/(X1-XM);
+%local KOS
+% line index i -> equation, Loadingpoint in node i=1,..,N+NW
+% column index j -> panel index j=N+1,..,N+NW  
+X=zeros(N+NW,NW-1); % relativ x coordinates from panel start point to Loading point
+X2=zeros(N+NW,NW-1); % relativ x coordinates from panel end point to Loading point
+Y=zeros(N+NW,NW-1); % relativ y coordinates from panel to Loading point
 
-    if k==1
-    a=1/L(1);b=a;
-    else
-    a=1/(L(k)+L(k-1));
-    b=1/L(k);
-    end
-    c1=(-pp*a+pm*a)/(4*pi);
-    c2=(-pp*b-pm*b)/(4*pi);
-    c3=(pp*(b+a)+pm*(b-a))/(4*pi);
-    
-    if k==1
-        dpsi_dq(k:k+1)=dpsi_dq(k:k+1)+[c1+c2, c3];
-    else
-        dpsi_dq(k-1:k+1)=dpsi_dq(k-1:k+1)+[c1, c2, c3];
-    end
-    
-    % du_dq
-    if nargin==3
-        xN= sum(wake.e(k,:).*n);
-        yN= wake.e(k,1)*n(2)-wake.e(k,2)*n(1);
 
-        up=-t1*xN+tM*xN + (lnr1-lnrM)*yN;
-        tmp1=((X1-XM)*t1 + pp  - pm)/(X1-XM);
-        tmp2=((X1-XM)*tM + pp  + pm)/(X1-XM);
-        tmp3=((X1+XM)*(lnr1-lnrM)+2*(X1-XM+Y*(t1-tM)));
-        um=-tmp1*xN+tmp2*xN + (lnr1-lnrM)*tmp3;
-        c1=(-up*a+um*a)/(4*pi);
-        c2=(-up*b-um*b)/(4*pi);
-        c3=(up*(b+a)+um*(b-a))/(4*pi);
-        if k==1
-            du_dq(k:k+1)=dpsi_dq(k:k+1)+[c1+c2, c3];
-        else
-            du_dq(k-1:k+1)=dpsi_dq(k-1:k+1)+[c1, c2, c3];
-        end
-    end
-    
-    % second panel half
-    %--------------------------------------------------
-    pp=(X2*t2-XM*tM+Y*(lnrM-lnr2));
-    pm=((XM+X2)*pp+rM^2*tM-r2^2*t2+Y*(X2-XM))/(XM-X2);
-
-    if k==NW-1
-    c=b;
-    else
-    c=1/(L(k+1)+L(k));
-    end
-    c1=(-pp*(c+b)-pm*(c-b))/(4*pi);
-    c2=(pp*b-pm*b)/(4*pi);
-    c3=(pp*c+pm*c)/(4*pi);
-    if k==NW-1
-        dpsi_dq(k:k+1)=dpsi_dq(k:k+1)+[c1, c2+c3];
-    else
-        dpsi_dq(k:k+2)=dpsi_dq(k:k+2)+[c1, c2, c3];
-    end
-
-    if nargin==3
-        up=-tM*xN+tM*xN + (lnrM-lnr2)*yN;
-        tmp1=((X2-XM)*tM + pp  - pm)/(XM-X2);
-        tmp2=((X2-XM)*t2 + pp  + pm)/(XM-X2);
-        tmp3=((X2+XM)*(lnrM-lnr2)+2*(X2-XM+Y*(tM-t2)));
-        um=-tmp1*xN+tmp2*xN + (lnrM-lnr2)*tmp3;
-        c1=(-up*a+um*a)/(4*pi);
-        c2=(-up*b-um*b)/(4*pi);
-        c3=(up*(b+a)+um*(b-a))/(4*pi);
-        if k==NW-1
-            du_dq(k:k+1)=du_dq(k:k+1)+[c1, c2+c3];
-        else
-            du_dq(k:k+2)=du_dq(k:k+2)+[c1, c2, c3];
-        end
-    end
-    
+for i=1:NW+N % sum over all equations
+    xi=[xn(i,1)*ones(NW-1,1), xn(i,2)*ones(NW-1,1)];
+    r1= xi-[xp1, yp1]; %relativ vector start point - Loading point
+    r2= xi-[xp2, yp2]; %relativ vector end point - Loading point
+    tmp=transpose(sum(ew.*r1,2)); 
+    X(i,:)=tmp;
+    tmp=transpose(sum(ew.*r2,2));
+    X2(i,:)=tmp;
+    tmp=transpose(sum(nw.*r1,2));
+    Y(i,:)=tmp;
 end
+
+r1=X.^2+Y.^2; % r^2
+r2=X2.^2+Y.^2;
+
+lnr1=log(r1)/2; % ln(r) =ln(r^2)/2
+lnr2=log(r2)/2;
+
+S1= find(r1<1e-10);
+lnr1(S1)=0;
+S2= find(r2<1e-10);
+lnr2(S2)=0;
+
+
+
+
+% airfoil velocity
+%---------------------------
+sgn1=sign(X(1:1:N,:));
+sgn2=sign(X2(1:1:N,:));
+ts1=atan2(sgn1.*X(1:1:N,:),sgn1.*Y(1:1:N,:))+pi*(ones(N,NW-1)-sgn1)/2; 
+ts2=atan2(sgn2.*X2(1:1:N,:),sgn2.*Y(1:1:N,:))+pi*(ones(N,NW-1)-sgn2)/2;
+
+% correction for angles 
+cor=InvAngle(atan2(-e(:,1),e(:,2)) + pi*ones(N,1) ) ;
+cor=cor*ones(1,NW-1);
+ts1=ts1-cor ;
+ts2=ts2-cor ;
+
+% constant ansatz -> only q_j appears in integral for j-th panel
+psi = (1/(2*pi))*( -X(1:1:N,:).*ts1 +X2(1:1:N,:).*ts2 + Y(1:1:N,:).*(lnr1(1:1:N,:)-lnr2(1:1:N,:)) );
+Bwake=[psi, zeros(N,1)]; % no source contribution on last wake node
+
+
+
+% Wake velocity
+%---------------------------
+k= ew(:,1).*nw(:,2) - ew(:,2).*nw(:,1);
+k=transpose(k*ones(1,NW));
+
+Cqwake= k.*(lnr1(N+1:1:N+NW,:)-lnr2(N+1:1:N+NW,:))/(4*pi);
+Cqwake=[Cqwake, zeros(NW,1)];%last value doesn´t appear for linear ansatz
+
+% Cij= 0.5*(e1n2-n1t2)*L^2 - X1*(e1n2-n1t2)*L -2*n1*n2*Y*L
+
 
 end
 

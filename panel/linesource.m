@@ -23,8 +23,9 @@ r2=norm(point-extrema(2,:));     %distance from second node to the loading point
  %   -> if (x,y) lays in one of the nodes of the panel
  if r1<1e-10; lnr1=0; t1=0;  else lnr1=log(r1);  t1=atan2(sgn*X,sgn*Y)+pi/2*(1-sgn); end
  if r2<1e-10; lnr2=0; t2=0;  else lnr2=log(r2);  t2=atan2(sgn2*X2,sgn2*Y)+pi/2*(1-sgn2); end
-t1=t1- InvAngle(atan2(-t(1),t(2) )+pi);
-t2=t2- InvAngle(atan2(-t(1),t(2) )+pi);
+
+t1=t1- InvAngle( atan2(-t(1),t(2) )+pi );
+t2=t2- InvAngle( atan2(-t(1),t(2) )+pi );
 
  
 psi = (1/(2*pi))*( -X*t1 +X2*t2 + Y*(lnr1-lnr2) );

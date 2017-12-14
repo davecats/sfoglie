@@ -1,4 +1,4 @@
-function [ z ] = NewtonEq( gamma,D,L,minit,Tinit,it,rel)
+function [ z ] = NewtonEq( Uinv,minit,Tinit,L,D,it,rel)
 %NEWTONEQ       sets up the global Newton equationsystem J dz=- f(z) and
 %               solves one Newton-step
 %               gamma: circulation distribution
@@ -22,7 +22,7 @@ m=minit;
 k=0;
 res=1;
 while res>1e-2 && k<it
-[J,rhs]=JacobiM(gamma,D,L,m,T);
+[J,rhs]=JacobiM(Uinv,m,T,L,D);
 dz=J\rhs; % Solution of equation -> gives correction for current Newton-step
   
 T=T+rel*dz(1:n);

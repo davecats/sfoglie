@@ -3,12 +3,14 @@ function [ CD2, dCD2_dH,dCD2_dRet ] = CD2lam(H12,Ret,H32,mod)
 %           default: takes the "new" models
 %           if mod is committed, the models of the paper are used
 
-% if vector input
-%---------------------------------------------------------------
+
 if isscalar(H12)==false
     n=length(H12);
     CD2=zeros(n,1);
     dCD2_dH=zeros(n,1);
+    dCD2_dRet=zeros(n,1);
+    
+    
     if nargin==3
         % "new" models from Drela 1989
         ind1=find(H12<=4);
@@ -30,17 +32,16 @@ if isscalar(H12)==false
         I=ones(length(ind2),1);
         H32=H32TMP(ind2);
         Ret=RetTMP(ind2);
-        H12=H12TMP(ind2);
+        H12=H12TMP(ind12);
         
         
-        CD2(ind2)     =H32./Ret .*  ( 0.207*I -0.0016*(H12-4*I).^2 ./(I+0.002*(H12-4*I).^2) );
+        CD2(ind2)     =H32./Ret .*  ( 0.207*I -0.0016*(H12-4*I).^2 ./(1+0.002*(H12-4*I).^2) );
         dCD2_dH(ind2) =H32./Ret .*  ( -0.0032*(H12-4*I)./(I+0.02*(H12-4*I).^2)...
-                                      +0.0016*(H12-4*I).^2.*(0.004*H12-0.016*I)./(I+0.002*(H12-4*I).^2).^2);
+                                      +0.0016*(H12-4*I).^2*(0.004*H12-0.016*I)./(I+0.002*(H12-4*I).^2).^2);
         
         
         
-        dCD2_dRet=-CD2./RetTMP;
-    %---------------------------------------------------------------
+        dCD2_dRet=-CD2/RetTMP;
     else
         % "old" models from Drela 1987
         ind1=find(H12<=4);
@@ -62,17 +63,18 @@ if isscalar(H12)==false
         I=ones(length(ind2),1);
         H32=H32TMP(ind2);
         Ret=RetTMP(ind2);
-        H12=H12TMP(ind2);
+        H12=H12TMP(ind12);
         
-        CD2(ind2)     =H32./Ret .*  ( 0.207*I -0.003*(H12-4*I).^2 ./(I+0.002*(H12-4*I).^2) );
+        
+        CD2(ind2)     =H32./Ret .*  ( 0.207*I -0.003*(H12-4*I).^2 /(I+0.002*(H12-4*I).^2) );
         dCD2_dH(ind2) =H32./Ret .*  ( -0.006*(H12-4*I)./(I+0.02*(H12-4*I).^2)...
-                                      +0.003*(H12-4*I).^2.*(0.004*H12-0.016*I)./(I+0.002*(H12-4*I).^2).^2);
+                                      +0.003*(H12-4)^2*(0.004*H12-0.016)/(1+0.002*(H12-4)^2)^2);
 
-        dCD2_dRet=-CD2./RetTMP;
+
+        dCD2_dRet=-CD2/RetTMP;
     end
     
-% if scalar input
-%---------------------------------------------------------------
+
 else
     %nu=evalin('base','nu');
     %H32=ET/U;
