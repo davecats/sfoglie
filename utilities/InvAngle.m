@@ -6,42 +6,21 @@ function [ phi ] = InvAngle( theta )
 scalar=isscalar(theta); % checks wether input is a scalar
 
 if scalar==true
-     if theta<-pi/2 %&& theta>-pi
-       phi=-3*pi/2-theta;
-     elseif theta==0
-        phi=0;%pi/2;
-     elseif theta==pi/2
-        phi=0;
-     elseif theta==pi ||theta==-pi
-        phi=0;%-pi/2;
-     elseif theta==-pi/2
-        phi=pi;
+    % third quadrant
+    if theta < -pi/2
+        phi=-3/2*pi-theta;
+    % first, second and fourth quadrant    
     else
-       phi=pi/2-theta;
-     end
+        phi=pi/2-theta;
+    end
 else
     n=length(theta(:,1));
     m=length(theta(1,:));
+     % first, second and fourth quadrant
     phi=pi/2*ones(n,m)-theta;
-    phi(theta==-pi)=0;
-    phi(theta<-pi/2)=theta(theta<-pi/2)-3*pi/2;
-    
-    
-    phi(theta==0)=0;
-    phi(theta==pi/2)=0;
-    phi(theta==pi)=0;
-    phi(theta==-pi/2)=pi;
-    
+    % third quadrant
+    phi(theta < -pi/2)= -3/2*pi -theta(theta < -pi/2); 
 end
-
-
-
-
-
-
-
-
-
 
 
 

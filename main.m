@@ -7,6 +7,7 @@ addpath('./geometry/')
 addpath('./utilities/')
 addpath('./models/')
 addpath('./wake/')
+addpath('./BoundaryLayer/')
 set(groot, 'defaultAxesTickLabelInterpreter','LaTex'); set(groot, 'defaultLegendInterpreter','LaTex');
 
 %%
@@ -15,158 +16,165 @@ set(groot, 'defaultAxesTickLabelInterpreter','LaTex'); set(groot, 'defaultLegend
 
 % Parameters
 profile.c = 1;       % scale factor of the profile   
-profile.N = 80;%140; % number of nodes on each bottom and top side ->2N-1 panels and nodes
-                     % node with index i=N has coordinates (0,0)
-                     % node with index i=2*N is the same as i=1
-NW=40; %   number of wake nodes
+profile.M = 80;      % number of x-values, where nodes will be -> 2*M-1 nodes in total
+
+Invisc=false;% true;%% only inviscid solution or with Boundary Layer
 profile.alfa = 2*pi/180;
 profile.Uinfty=1; % Anstroemgeschwindigkeit
-NACA = [4 4 1 2];
-
 Re=6.536*10^4;
-nu= profile.c*profile.Uinfty /Re;%1.53e-5; %cinematic viscosity
+%cinematic viscosity
+nu= profile.c*profile.Uinfty /Re;%1.53e-5; 
 
+NACA = [4 4 1 2]; % naca profil
+NoSkew=true; % if true profile skewness neclected
+
+NW= round(profile.M/4)+2; %   number of wake nodes
 %calculates x- and y-component of homogeneous flow
 ui = profile.Uinfty*cos(profile.alfa); 
 vi = profile.Uinfty*sin(profile.alfa);
 
-% Create profile and panels
-profile = naca4(profile,NACA);
+% calculate NACA profile Nodes
+profile = naca4(profile,NACA,NoSkew);
+clear NACA NoSkew
+
+% import profile Nodes
+%data=load('Nodes.txt');
+%profile.nodes.X=transpose(data(:,1));profile.nodes.Y=transpose(data(:,2));
+%profile.N=length(data(:,1)); clear data
+
+% create the panels, identify if Profile has sharp or blunt trailing edge
 profile = create_panels(profile);
 
 
-% Plot profile
-% figure(); hold on; box on;
-% plot([profile.panels.X]',[profile.panels.Y]','k','Linewidth',2);
-% axis equal; xlabel('x'); ylabel('y')
 
-clear NACA
 %%
 %  inviscid solution
 %------------------------------------
 
 % Solve potential flow
  [field]=potential(profile);  
- %Nle=round((profile.M-1)/2); %Leading edge node index
- Nle=find(field.gamma<0);Nle=Nle(1); % first node of pressure side
  
- 
-% figure()
-% hold on; box on
-% plot(mean(profile.panels.X(1:Nle,:),2), (1-field.gamma(1:Nle).^2));
-% plot(mean(profile.panels.X(Nle:end,:),2), (1-field.gamma(Nle:end).^2));
-% load naca4412_alfa2.txt
-% plot(naca4412_alfa2(:,1),naca4412_alfa2(:,3),'black .');
-% xlim([0 1]);
-% legend('$C_p=1-\gamma(s)^2$ Saugseite','$C_p=1-\gamma(s)^2$ Druckseite',...
-% 'Xfoil 160 panels');
+ % get Leading edge position -> secant approximation
+ Nle=find(field.gamma<0,1); % first node of pressure side
+ profile.Nle=Nle;
+% distance from last suction side point
+profile.LE1=profile.panels.L(Nle-1)*field.gamma(Nle-1)/(abs(field.gamma(Nle-1))+abs(field.gamma(Nle))); 
+% distance from first pressure side point
+profile.LE2=profile.panels.L(Nle-1)-profile.LE1;
+
+N=profile.N;
+% arc length vector pressure side
+su=profile.s(Nle:end)-(profile.s(Nle)-profile.LE2)*ones(1,N-Nle+1); 
+% arc length vector suction side
+so=(profile.s(Nle-1)+profile.LE1)*ones(1,Nle-1)-profile.s(1:Nle-1); 
+profile.so=so;profile.su=su;   
+
+xo=profile.panels.X(1,1:Nle-1);
+xu=profile.panels.X(1,Nle:end);
+if profile.IsSharp; xu=[xu,profile.panels.X(2,end) ]; end
+
+% Plot polar curves
+if Invisc
+    Cp=1-field.gamma.^2;
+     %sum(Cp(Nle+1:end).*profile.panels.L(Nle:end)')-sum(Cp(1:Nle-1).*profile.panels.L(1:Nle-1)'); %total lift
+    if profile.IsSharp; Cp=[Cp; Cp(1)]; end
+    figure()
+    hold on; box on
+    plot([xo,xu(1)], Cp(1:Nle));
+    plot(xu,  Cp(Nle:end));
+    load naca4412_alfa2.txt
+    plot(naca4412_alfa2(:,1),naca4412_alfa2(:,3),'black .');
+    xlim([0 1]);
+    legend('$C_p=1-\gamma(s)^2$ Saugseite','$C_p=1-\gamma(s)^2$ Druckseite',...
+    'Xfoil 160 panels, $\alpha=2^\circ$');
+end
 
 
 
 
 %%
-%  viscous solution
+%  Wake influence
 %------------------------------------
-N=profile.M;
-
-%vector with panel length
-L=profile.panels.L;
-% Arc length vectors
-s=profile.panels.s;
-
-su=s(Nle:end)-s(Nle)*ones(N-Nle+1,1); % arc length vector pressure side
-so=s(Nle-1)*ones(Nle-1,1)-s(1:Nle-1); % arc length vector suction side
-   
-xo=mean(profile.panels.X(1:Nle-1,:),2);
-xu=mean(profile.panels.X(Nle:end,:),2);
 
 
- %{
-%Uinv=abs(field.gamma(:)); % inviscous part of velocity on airfoil
-%Ai=inv(field.A); % invert circulation coefficients
-%   Coefficient matrix airfoil only (i=1,..,N; j=1,...,N )
-%-----------------------------------------
-% BtildeFoil=-Ai*field.B;
-% %calculate the coefficients of the mass defect m_i from B_ij q_j 
-% DFoil=MassDefCoeff(BtildeFoil,transpose(s)); % q with forward diffs
-% 
-% % correct the sign of D for suction / pressure side
-% DFoil=[DFoil(:,1:Nle-1), -DFoil(:,Nle:end)];
-% 
-% % airfoil velocity without wake influence 
-% %  -> Ui=Uinv_i + sum_1^N B_ij q_j = Uinv_i + sum_1^N D_ij m_j
-%}
-
-
-
-%%
 
 %   calculate wake node position
 %------------------------------------
 % done by integrating the streamline throug the TE of inviscid solution
-wake=GetWakeStreamline(field,profile,NW,1.13);
-
-
-% % Plot wake
-% figure(); 
-% hold on; box on;
-% plot([profile.panels.X]',[profile.panels.Y]','k','Linewidth',2);
-% plot(wake.x,wake.y,'k');
-% axis equal; xlabel('x'); ylabel('y')
-
-
-%  equations for wake nodes -> only airfoil influence (i=N+1,...,N+NW; j=1,...,N)
-%----------------------------------------------
-[Cg, CqFoil]=GradPsi(profile, wake);
+wake=GetWakeStreamline(field,profile,NW,1.154);
 
 
 
-%  Influence of wake sources to integral (i=1,...,N+NW; j=N+1,...,N+NW)
-%----------------------------------------------
-[ Bwake, Cqwake ] = WakeSourceCoeffs( wake,profile );
-% Kutta condition, wake source influence on first wake node neglected
-Cqwake(1,:)=zeros(1,NW);
- 
+if Invisc
+   LEstr = LEstreamline( field,profile,round(3*NW/4) ,1.2);
+   figure(); 
+   hold on; box on;
+   plot([profile.panels.X]',[profile.panels.Y]','k','Linewidth',2);
+   plot(wake.x,wake.y,'b');
+   plot(LEstr.x,LEstr.y,'b');
+   axis equal; xlabel('x'); ylabel('y') 
+   return;
+end
 
- % combine Coefficient matrix for airfoil nodes by means of eq (7)f
-B=[field.B, Bwake];
- % combine Coefficient matrix for wake nodes by means of eq (31)
-Cq=[CqFoil, Cqwake];
+
+% Source coefficient matrix for airfoil nodes Bges
+%-------------------------------------------------------------
+
+% influence of airfoil nodes -> i=1,..,N ; j=1,..,N
+B=field.B; % constant ansatz
+%B=Qlin(profile); % piecewise linear ansatz
+
+% influence of wake nodes -> i=1,..,N ; j=N+1,..,N+NW
+Bw=Qlin(profile,wake);
 
 
+Bges=[B, Bw];
 Ai=inv(field.A); % invert circulation coefficients
 %invert airfoil node Coeffs -> Coefficients by means of eq (10)
-Btilde=-Ai*B;
+Btilde=-Ai*Bges;
 % correct the sign for pressure side -> Ui=  gamma_i suction side
 %                                    -> Ui= -gamma_i pressure side
-Btilde(:,Nle:1:N)=-Btilde(:,Nle:1:N);
- 
- 
-% complete matrix for q
-
-Bges= [Btilde; CqFoil, Cqwake];
-Bges(N+1:1:end,:)= Bges(N+1:1:end,:)+Cg*Btilde;
+%Btilde(Nle:N,:)=-Btilde(Nle:N,:);
 
 
-% % make sure first wake point has same velocity as trailing edge
-Bges(N+1,1:1:N)=Bges(N,1:1:N);
+
+% Source coefficient matrix for wake nodes Bges
+%-------------------------------------------------------------
+
+% influence of airfoil nodes -> i=N+1,..,N+NW ; j=1,..,N
+[Cg, CqFoil] = GradPsi( profile,wake );
+Cqw = GradPsiW( wake, 'constant');
+
+ % combine Coefficient matrix for wake nodes by means of eq (31)
+Cq=[CqFoil, Cqw];
+
+Cq= Cq + Cg*Btilde;
 
 
+SourceCoeff= [Bges;Cq];
 
 %  mass defect coefficients 
 %---------------------------------------------
 
-% complete arc length vector with wake
-sges=[s; wake.s+(s(end)+L(end)/2)*ones(NW,1)];   
+sges=[profile.s, wake.s+(wake.s(end)+profile.panels.L(end)/2)*ones(1,NW)]; 
+D=MassDefCoeff(SourceCoeff,sges); % forward differences
+%D=MassDefCoeff(SourceCoeff,sges,'central'); % central differences
 
-
-D=MassDefCoeff(Bges,transpose(sges));
 
 % correct the sign for suction side 
 % ->arc length coordinate goes in opposit direction to the stream there
 %   q=-dm_ds
-D(:,1:1:Nle-1)=-D(:,1:1:Nle-1);
+D(:,1:Nle-1)=-D(:,1:Nle-1);
 
+% make sure first wake point has same velocity as trailing edge
+%D=SourceCoeff;
+D(N+1,:)=D(N,:);
+
+
+%debug
+%DT=load('./XFoilWerte/D.txt');
+%DT(1:Nle-1,1:Nle-1)=-DT(1:Nle-1,1:Nle-1);
+%DT(Nle:end,Nle:end)=-DT(Nle:end,Nle:end);
 
 
 
@@ -177,55 +185,72 @@ D(:,1:1:Nle-1)=-D(:,1:1:Nle-1);
 %UinvFoil=  Ai*( field.psi0*ones(N,1)+field.t); %-> equal to field.gamma
 
 UFoil = abs(field.gamma);
-UWake = ui*wake.nn(:,2)-vi*wake.nn(:,1) + Cg*abs(field.gamma);
+UWake = ui*wake.nn(2,:).'-vi*wake.nn(1,:).' + Cg*field.gamma;
+UWake(1)=UFoil(end); % First wake point has same velocity as TE
 
+CgX=load('./XFoilWerte/Cg.txt');
 Uinv=[UFoil; UWake];
 
 
 clear Do Du Bwake CqFoil Cqwake 
 %% 
 
-% solution of the coupled problem with Newton method
+%  viscous solution
+%----------------------------------------------
 
 
- % initial solution -> Blasius solution, plate
- a=@(x) sqrt(x*nu);
  
- % momentum thickness
- T1=0.664*a(xo);%*a(so)
- T2=0.664*a(xu);%*a(su)
- TW=0.664*a(wake.x); % wake
- Tinit=[T1; T2;TW]; 
+it=3; % maximum number of iterations
+
+%%
+% 
+
+% insert the blowing
+Vb=zeros(size(Uinv));
+
+
+ solInit = GetInitialSolution( profile,wake, Uinv,Vb,Re );
+
+%  m=solInit.U.*solInit.D;
+%  Unew= Uinv + abs(DT*m);
+%  
+%  for k=1:it
+%     sol = GetInitialSolution( profile,wake, Unew,Vb,Re );
+% 
+%     m=sol.U.*sol.D;
+%     Unew= Uinv + abs(DT*m);
+%  end
+%  
+%  
+%  
+%  figure
+% hold on
+% plot(transpose(profile.so),sol.T(1:Nle-1))
+% plot(transpose(profile.so),sol.D(1:Nle-1))
+% line([profile.so(sol.TranU) profile.so(sol.TranU)], [0 sol.D(sol.TranU)],'color','black');
+% title('Saugseite')
+% legend('$\delta_2$','$\delta_1$','Transitionspunkt','location','best'); 
+%  
+% figure
+% hold on
+% plot(transpose(profile.su),sol.T(Nle:N))
+% plot(transpose(profile.su),sol.D(Nle:N))
+% line([profile.su(sol.TranL-Nle+1) profile.su(sol.TranL-Nle+1)], [0 sol.D(sol.TranL)],'color','black');
+% title('Druckseite')
+% legend('$\delta_2$','$\delta_1$','Transitionspunkt','location','best'); 
+% 
+% figure
+% hold on
+% plot(transpose(wake.s),sol.T(N+1:N+wake.N))
+% plot(transpose(wake.s),sol.D(N+1:N+wake.N))
+% title('Nachlauf')
+% legend('$\delta_2$','$\delta_1$','$\delta_2$ XFoil','$\delta_1$ XFoil','location','best'); 
  
- % displacement thickness
- D1=1.7208*a(xo);%*a(so)
- D2=1.7208*a(xu);%*a(su)
- DW=1.7208*a(wake.x); % wake
- Dinit=[D1;D2;DW];
-  clear T1 T2 D1 D2
-  
- minit=Uinv.*Dinit; % initial mass defect
  
-
- Uinit=Uinv+D*minit; % resulting initial velocoty (not necessary) 
-
-
-
-rel=0.7;% Relaxation factor rel<1 under relaxation, 1<rel<2 overrelaxation
-it=1; % maximum number of Newton iterations
-
+ 
+ %{
 % Newton iterations 
-z=NewtonEq(Uinv,minit,Tinit,[L;wake.L],D,it,rel);
-
-
-% end solution
-z=z(:,end);
-T=z(1:N+NW);
-m=z(N+NW+1:end);
-
-U=Uinv+D*m; % total boundary edge velocity
-d1=m./U;    % displacement thickness
-
+%[T,m,U,d1]=NewtonEq(profile,wake,Uinv,minit,Tinit,DT,it);
 
 
 % Plots------------------------------------
@@ -234,10 +259,12 @@ figure
 hold on
 plot(xu,d1(Nle:N));
 plot(xu,T(Nle:N));
+% plot([0;xu],d1(Nle:N+1));
+% plot([0;xu],T(Nle:N+1));
 plot(xu,Dinit(Nle:N));
 plot(xu,Tinit(Nle:N));
 title('Druckseite')
-legend('$\delta_1$','$\delta_2$','$\delta_1$ Blasius Lsg','$\delta_2$ Blasius Lsg');
+legend('$\delta_1$','$\delta_2$','$\delta_1$ Blasius Lsg','$\delta_2$ Blasius Lsg','location','best');
 
 
 % suction side
@@ -246,23 +273,46 @@ figure
 hold on
 plot(xo,d1(1:Nle-1));
 plot(xo,T(1:Nle-1));
+% plot([xo;0],d1(1:Nle));
+% plot([xo;0],T(1:Nle));
 plot(xo,Dinit(1:Nle-1));
 plot(xo,Tinit(1:Nle-1));
 title('Saugseite')
-legend('$\delta_1$','$\delta_2$','$\delta_1$ Blasius Lsg','$\delta_2$ Blasius Lsg');
+legend('$\delta_1$','$\delta_2$','$\delta_1$ Blasius Lsg','$\delta_2$ Blasius Lsg','location','best');
 
 
 figure
 hold on
-plot(wake.x,d1(N+1:end));
-plot(wake.x,T(N+1:end));
+ plot(wake.x,d1(N+1:end));
+ plot(wake.x,T(N+1:end));
+% plot(wake.x,d1(N+2:end));
+% plot(wake.x,T(N+2:end));
 plot(wake.x,Dinit(N+1:end));
 plot(wake.x,Tinit(N+1:end));
 title('Nachlauf')
-legend('$\delta_1$','$\delta_2$','$\delta_1$ Blasius Lsg','$\delta_2$ Blasius Lsg');
+legend('$\delta_1$','$\delta_2$','$\delta_1$ Anfangsl\"osung','$\delta_2$ Anfangsl\"osung','location','best');
 %}
 
 
+% "thicked" shape
+% d1=Dinit; %tst
+% 
+% XT=profile.nodes.X - profile.nodes.n(1,:).*transpose(d1(1:profile.N));
+% YT=profile.nodes.Y - profile.nodes.n(2,:).*transpose(d1(1:profile.N));
+% XTw=wake.x' + wake.nn(1,:).*transpose(d1(profile.N+1:end));
+% YTw=wake.y' + wake.nn(2,:).*transpose(d1(profile.N+1:end))/2;
+% YTw2=wake.y' - wake.nn(2,:).*transpose(d1(profile.N+1:end))/2;
+% 
+% figure(); 
+% hold on; box on;
+% plot([profile.panels.X]',[profile.panels.Y]','k','Linewidth',2);
+% plot(wake.x,wake.y,'k','Linewidth',1.2);
+% plot(XT,YT,'b');
+% plot(XTw,YTw,'b');
+% plot(XTw,YTw2,'b');
+% axis equal; xlabel('x'); ylabel('y') 
+
+%}
 
 
 

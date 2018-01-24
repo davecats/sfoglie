@@ -12,23 +12,33 @@ L=norm(t); t=t/L;
 n=[t(2) -t(1)]; %t=t; % normal vector of the panel
 X=sum((point-extrema(1,:)).*t);  %Delta x from first node to the loading point (x,y)
 X2=sum((point-extrema(2,:)).*t); %Delta x from second node to the loading point (x,y)
-Y=sum((point-extrema(1,:)).*n);  %Delta y of the panel to the loading point (x,y)
+Y=-sum((point-extrema(1,:)).*n);  %Delta y of the panel to the loading point (x,y)
 r1=norm(point-extrema(1,:));     %distance from first node to the loading point (x,y)
 r2=norm(point-extrema(2,:));     %distance from second node to the loading point (x,y)
 
 
- sgn=sign(X);
- sgn2=sign(X2);
- % Filtering the singularity on bouandary points 
- %   -> if (x,y) lays in one of the nodes of the panel
- if r1<1e-10; lnr1=0; t1=0;  else lnr1=log(r1);  t1=atan2(sgn*X,sgn*Y)+pi/2*(1-sgn); end
- if r2<1e-10; lnr2=0; t2=0;  else lnr2=log(r2);  t2=atan2(sgn2*X2,sgn2*Y)+pi/2*(1-sgn2); end
+ if r1<1e-10; lnr1=0; t1=0;  else lnr1=log(r1);  t1=atan2(X,Y); end
+ if r2<1e-10; lnr2=0; t2=0;  else lnr2=log(r2);  t2=atan2(X2,Y); end
 
-t1=t1- InvAngle( atan2(-t(1),t(2) )+pi );
-t2=t2- InvAngle( atan2(-t(1),t(2) )+pi );
+cor= atan2(t(1),-t(2));
+t1=t1-cor;
+t2=t2-cor;
+ 
+  psi = (1/(2*pi))*( X*t1 - X2*t2 + Y*(lnr1-lnr2) );
+
+  
+%  sgn=sign(X);
+%  sgn2=sign(X2);
+%  % Filtering the singularity on bouandary points 
+%  %   -> if (x,y) lays in one of the nodes of the panel
+%  if r1<1e-10; lnr1=0; t1=0;  else lnr1=log(r1);  t1=atan2(sgn*X,sgn*Y)+pi/2*(1-sgn); end
+%  if r2<1e-10; lnr2=0; t2=0;  else lnr2=log(r2);  t2=atan2(sgn2*X2,sgn2*Y)+pi/2*(1-sgn2); end
+% 
+% t1=t1- InvAngle( atan2(-t(1),t(2) )+pi );
+% t2=t2- InvAngle( atan2(-t(1),t(2) )+pi );
 
  
-psi = (1/(2*pi))*( -X*t1 +X2*t2 + Y*(lnr1-lnr2) );
+%psi = (1/(2*pi))*( -X*t1 + X2*t2 + Y*(lnr1-lnr2) );
 
 % Alternative formulation 
 %
