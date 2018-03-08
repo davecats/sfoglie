@@ -4,17 +4,17 @@ function [ HS,dHS_dH,dHS_dRet  ] = H32turb( H, Ret )
 
 % Help parameter H0
 dim=size(H);
-n=length(H);
 H0=4*ones(dim);
 dH0_dRet=zeros(dim);
-H0(Ret>400)=3 + 400/Ret(Ret>400);
-dH0_dRet(Ret>400)=-400/Ret(Ret>400).^2;
+H0(Ret>400)=3 + 400./Ret(Ret>400);
+dH0_dRet(Ret>400)=-400./Ret(Ret>400).^2;
 
 
 % threatment of small Rets
-Ret(Ret<200)=200;
-dRet_dRet=ones(n,1);
+dRet_dRet=ones(dim);
 dRet_dRet(Ret<200)=0;
+Ret(Ret<200)=200;
+
 
 
 HS= zeros(dim);

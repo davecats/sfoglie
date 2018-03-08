@@ -1,13 +1,8 @@
-function [wake] = GetWakeStreamline( fld,prf,NW ,grading)
-%GETWAKESTREAMLINE  calculates the noedes on the wake streamline. 
-%                   Finds points where psi-psi0 goes to zero -> Sekantenmethode
+function [wake] = GetWakeStreamline( fld,prf,NW )
+%GETWAKESTREAMLINE  calculates the nodes on the wake streamline. 
+%                   uses Newton method to find points with psi=psi0
 %                   NW: number of wake nodes
-%                   grading: default set to 1.1
 
-
-if nargin==3
-grading=1.1;
-end
 
 
 %        calculate first wake tangent vector
@@ -16,6 +11,7 @@ e1=prf.panels.e(:,1);
 eN=prf.panels.e(:,end-1);
 s=0.5*transpose(eN-e1);
 %if s(1)<0; s=-s; end;
+
 
 
 if prf.IsSharp
@@ -27,92 +23,62 @@ else
     x1=[prf.panels.X(1,1) prf.panels.Y(1,1)]; 
     xN=[prf.panels.X(1,end) prf.panels.Y(1,end)];
 
-    xTE= (x1+xN)/2; % Midpoint of TE
+    xTE= (x1+xN)/2 + 0.0001*s; % Midpoint of TE
     psi0=fld.psi0;
-    %psi0=evaluateInviscFieldSol(xTE+0.0001*s,fld,prf);
+    %psi0=evaluateInviscFieldSol(xTE,fld,prf);
 end
 
-
-
-
 % starting step size of wake equals the Panel length of first panel
-h=prf.panels.L(1);
+h=0.5*( prf.panels.L(1) + prf.panels.L(prf.N-1) );
+
+grading=Grading(h,prf.c,NW);
+
 
 % guess second wake point 
-guess= xTE+1.01*h*s;
+guess= xTE + h*s;
 
 xw=zeros(NW,2); xw(1,:)=xTE;
 sw=zeros(1,NW);
 lw=zeros(1,NW-1);
-%value of streamfunktion for guessing point
 
-dy=30*abs(h*s(2));
 
-for i=1:NW-1 % each node of wake
-    psig=evaluateInviscFieldSol(guess,fld,prf);
-    found=false;k=1;
-    
-    % find point on wake streamline -> psi=psi0
-    
-    % Einschlussintervall finden
-    %------------------------------------------------
-    while found==false && k<20 % prevent endless loop
-        psip = evaluateInviscFieldSol(guess+[0, k*dy],fld,prf);
-        d1=psig-psi0;
-        d2=psip-psi0;
-        if sign(d1)*d2 < 0 % Einschlussintervall gefunden
-          psi1=psig;
-          psi2=psip;
-          found=true;
-          y2 = guess(2) + k*dy;
-        else
-          psim=evaluateInviscFieldSol(guess-[0, k*dy],fld,prf);  
-          d2=psim-psi0;  
-          if sign(d1)*d2 < 0 % Einschlussintervall gefunden
-            psi1=psig;
-            psi2=psim;  
-            found=true;
-            y2 = guess(2) - k*dy;
-          end
-        end
-        k=k+1;   
+
+for i=1:NW-1 
+    xw(i+1,:)=guess;
+  
+    %------------- iterate to find Loadingpoint with exact psi=psi0  -------
+    res=1;k=0;
+    while res>1e-6 && k<50 % prevent endless loop
+        psi= evaluateInviscFieldSol(xw(i+1,:),fld,prf);
+
+        [dg_dx,dg_dy]=GradPsi(xw(i+1,1), xw(i+1,2),prf);
+        dpsi_dx=-dg_dx*fld.gamma;
+        dpsi_dy=-dg_dy*fld.gamma;
+
+        ht=norm(xw(i+1,:)-xw(i,:));
+        % Newton-Method
+
+        J=[dpsi_dx, dpsi_dy; 2*(xw(i+1,1)-xw(i,1)), 2*(xw(i+1,2)-xw(i,2))];
+        f=[psi-psi0, ht^2-h^2];
+
+        dx=  (f(2)*J(1,2) - f(1)*J(2,2))/( J(1,1)*J(2,2)- J(1,2)*J(2,1) );
+        dy=  (f(1)*J(2,1) - f(2)*J(1,1))/( J(1,1)*J(2,2)- J(1,2)*J(2,1) );
+
+        res=max(abs(f./[psi0,h]));
+        % refresh for new iteration
+        xw(i+1,:)= xw(i+1,:) + [dx, dy];
+        k=k+1;
     end
-    %------------------------------------------------
-    y1=guess(2);
-    dn=1; l=0;
-    % Sekanten Methode
-    %------------------------------------------------
-    res=1e-12; % residuum
-    while  abs(dn)>res && l<40 % prevent endless loop
-        d1=psi1-psi0;
-        d2=psi2-psi0;
-        yn=(abs(d1)*y2 + abs(d2)*y1) /(abs(d1)+abs(d2));
-        new=[guess(1), yn];
-        psin=evaluateInviscFieldSol(new,fld,prf);
-        dn=psin-psi0;
-        if sign(dn)*d1 <0
-           psi2 = psin;
-           y2=yn;
-        else
-           psi1 = psin;
-           y1=yn; 
-        end
-        l=l+1;
-    end
-    %------------------------------------------------
-    xw(i+1,:)=[guess(1), yn];
-    grad=1+(grading-1)/(1+0.0002*(i-1)^2); % make grading go to 1 at end of wake
-    guess=xw(i+1,:) + grad*(xw(i+1,:)-xw(i,:));
+
     lw(i)=norm(xw(i+1,:)-xw(i,:));
+    delta=xw(i+1,:)-xw(i,:);
+    guess= xw(i+1,:) + grading*delta;
     sw(i+1)=sw(i) + lw(i);
-    
-%     if lw(i)>20*lw(1)
-%        grading=1; 
-%     end
-    
+    h=lw(i)*grading;
 end
 
-%tangential vektors
+
+%tangential vectors
 
 ew=transpose(xw(2:end,:)-xw(1:end-1,:)); ew=[ew(1,:)./lw; ew(2,:)./lw];
 nw=[-ew(2,:);ew(1,:)];
@@ -148,8 +114,103 @@ A= 3+2.5*D;
 B=-2-2.5*D;
 wg=zeros(size(wake.s));
 wg(ZN>0)= AN* (A+B*ZN(ZN>0)).*ZN(ZN>0).^2;
-wake.GAP=wg;
+wake.gap=wg';
 
 
+%dy=prf.nodes.Y(2)-prf.nodes.Y(end-1);
+
+% % OLD -Secant method
+% for i=1:NW-1 % each node of wake
+%     psig=evaluateInviscFieldSol(guess,fld,prf);
+%     found=false;k=1;
+%     
+%     % find point on wake streamline -> psi=psi0
+%     
+%     % Einschlussintervall finden
+%     %------------------------------------------------
+%     while found==false && k<20 % prevent endless loop
+%         psip = evaluateInviscFieldSol(guess+[0, k*dy],fld,prf);
+%         d1=psig-psi0;
+%         d2=psip-psi0;
+%         if sign(d1)*d2 < 0 % Einschlussintervall gefunden
+%           psi1=psig;
+%           psi2=psip;
+%           found=true;
+%           y2 = guess(2) + k*dy;
+%         else
+%           psim=evaluateInviscFieldSol(guess-[0, k*dy],fld,prf);  
+%           d2=psim-psi0;  
+%           if sign(d1)*d2 < 0 % Einschlussintervall gefunden
+%             psi1=psig;
+%             psi2=psim;  
+%             found=true;
+%             y2 = guess(2) - k*dy;
+%           end
+%         end
+%         k=k+1;   
+%     end
+%     %------------------------------------------------
+%     y1=guess(2);
+%     dn=1; l=0;
+%     % Sekanten Methode
+%     %------------------------------------------------
+%     res=1e-12; % residuum
+%     while  abs(dn)>res && l<40 % prevent endless loop
+%         d1=psi1-psi0;
+%         d2=psi2-psi0;
+%         yn=(abs(d1)*y2 + abs(d2)*y1) /(abs(d1)+abs(d2));
+%         new=[guess(1), yn];
+%         psin=evaluateInviscFieldSol(new,fld,prf);
+%         dn=psin-psi0;
+%         if sign(dn)*d1 <0
+%            psi2 = psin;
+%            y2=yn;
+%         else
+%            psi1 = psin;
+%            y1=yn; 
+%         end
+%         l=l+1;
+%     end
+%     %------------------------------------------------
+%     xw(i+1,:)=[guess(1), yn];
+%     grad=1+(grading-1)/(1+0.0002*(i-1)^2); % make grading go to 1 at end of wake
+%     guess=xw(i+1,:) + grad*(xw(i+1,:)-xw(i,:));
+%     lw(i)=norm(xw(i+1,:)-xw(i,:));
+%     sw(i+1)=sw(i) + lw(i);
+%     
+% %     if lw(i)>20*lw(1)
+% %        grading=1; 
+% %     end
+%     
+% end
+
+% % starting y-step size
+% dy1=0.2*( prf.nodes.Y(2)-prf.nodes.Y(end-1) );
+% for i=1:NW-1 
+%     psi1= evaluateInviscFieldSol(guess,fld,prf);
+%     
+%     
+%     psi2= evaluateInviscFieldSol(guess + [0, dy1],fld,prf);
+%     
+%     dy= (psi0-psi1)/(psi2-psi1)*dy1;
+%     xw(i+1,:)=guess;
+%     
+%     res=1;k=0;
+%     while res>1e-9 && k<20 % prevent endless loop
+%         psi2= evaluateInviscFieldSol(xw(i+1,:) + [0, dy],fld,prf);
+%         dy= (psi0-psi1)/(psi2-psi1)*dy;
+%         
+%         % refresh for new iteration
+%         xw(i+1,2)= xw(i+1,2) + dy;
+%         psi1=psi2;
+%         k=k+1;
+%     end
+%     
+%     
+%     %grading=1+(grading-1)/(1+0.0002*(i-1)^2); % make grading go to 1 at end of wake
+%     guess=xw(i+1,:) + grading*(xw(i+1,:)-xw(i,:));
+%     lw(i)=norm(xw(i+1,:)-xw(i,:));
+%     sw(i+1)=sw(i) + lw(i);
+% end
 end
 

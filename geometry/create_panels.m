@@ -70,5 +70,9 @@ p.panels.e=e;
 p.s=s;
 p.panels.L=L;
 
+% TE Gap
+p.gap=p.ScrossT*p.panels.L(end);
+
+
 end
 

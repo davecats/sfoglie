@@ -37,11 +37,11 @@ DD=dDI./sol.D;
 DU=dU/0.25;
 
 % residual
-% rms= DC.^2 + DT.^2 + DD.^2 + DU.^2;
-% res= sqrt( sum(rms)/(4*prf.N+wake.N) );
+rms= DC.^2 + DT.^2 + DD.^2 + DU.^2;
+res= sqrt( sum(rms)/(4*prf.N+wake.N) );
 
-rms= DC(1:prf.N).^2 + DT(1:prf.N).^2 + DD(1:prf.N).^2 + DU(1:prf.N).^2;
-res= sqrt( sum(rms)/(4*prf.N) );
+% rms= DC.^2 + DT.^2 + DD.^2 + DU.^2;
+% res= sqrt( sum(rms)/(4*prf.N) );
 
 
 % adjust Relaxationfactor for big relative changes in D,C,T or U

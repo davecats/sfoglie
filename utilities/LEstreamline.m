@@ -1,6 +1,5 @@
 function LEstr = LEstreamline( fld,prf,N ,grading)
-%LESTREAMLINE Summary of this function goes here
-%   Detailed explanation goes here
+%LESTREAMLINE 
 
 
 

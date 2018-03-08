@@ -1,328 +1,498 @@
-function [ J, rhs] = JacobiM( T,m,U,DI,D ,h)
+function [ J, rhs] = JacobiM( prf,wake,sol,Unew,D)
 %JACOBIM        calculates the Jacobimatrix and right hand side for the Newton system 
-%               for solution vector z=[T1,..,TN,m1,..,mN]^T 
-%               gamma: circulation distribution
-%               D: Coefficients of mass Defekt -> U = Uinv + Dm
-%               L: Vector with panel length
-%               m: mass defect vector from previous step
-%               T: momentum thickness vector from previous step
+%               for solution vector z=[T1,..,TN, C1,.., CN,m1,..,mN]^T 
 
 
-nu=evalin('base','nu');
-Nle=evalin('base','Nle');
-NW=evalin('base','NW');     % number of wake nodes
-N=length(T); 
-NFoil=N-NW;% node number on air foil 
+%nu=evalin('base','nu');
+dim=size(Unew);
+Nges=prf.N + wake.N;
 
-% panel midpoint approximations
-TM=(T(1:end-1) + T(2:end)) /2;
-DM=(DI(1:end-1)+ DI(2:end))/2;
-UM=(U(1:end-1) + U(2:end)) /2;
+% panel length vector
+h=[prf.panels.L,wake.L]';
 
 
-% help quantities
-H=DI./T; %shape parameter H1
-%HM=(H(2:end)+H(1:end-1));%HM=DM./TM;
-Ret= U.*T/nu;
-%ReM=(Ret(2:end)+Ret(1:end-1));%UM.*TM/nu;
+%prescribe
+f1=zeros(dim);
+f2=zeros(dim);
+f3=zeros(dim);
+df1_dT=zeros(Nges,2);
+df1_dD=zeros(Nges,2);
+df1_dU=zeros(Nges,2);
+%df1_dC=zeros(Nges,2);
+df1_ds=zeros(Nges,2);
+df2_dT=zeros(Nges,2);
+df2_dD=zeros(Nges,2);
+df2_dU=zeros(Nges,2);
+df2_dC=zeros(Nges,2);
+df2_ds=zeros(Nges,2);
+df3_dT=zeros(Nges,2);
+df3_dD=zeros(Nges,2);
+df3_dU=zeros(Nges,2);
+df3_dC=zeros(Nges,2);
+df3_ds=zeros(Nges,2);
+%                                        laminar part of Boundary
+%------------------------------------------------------------------------------------------------------------------------
 
-% set Hmin
-H(H(1:NFoil)<1.05)=1.05;
-ind=find(H(NFoil+1)<1.00005);ind=NFoil*ones(length(ind))+ind;
-H(ind)=1.00005;
- 
-% calculate Cf, CD, H32 and their derivates in respect to H and Ret
-[ Cf, dCf_dH, dCf_dRet ] = CF2lam( H(1:end-NW), Ret(1:end-NW));
-[ HS, dHS_dH ]=H32lam(H);
-[ CD, dCD_dH, dCD_dRet ]=CD2lam(H(1:end-NW),Ret(1:end-NW),HS(1:end-NW));
-dCD_dHS=CD./HS(1:end-NW);
+% suction side
+%------------------------------------------------------------
 
-% no friction on wake
-Cf=[Cf; zeros(NW,1)];dCf_dH=[dCf_dH; zeros(NW,1)];dCf_dRet=[dCf_dRet; zeros(NW,1)];
+ind=(prf.Nle-1 :-1: sol.iTran(1)+1); % laminar node indizes starting from LE
+indM=ind(2:end); % panel indizes
+s1=prf.sU(ind(1:end-1))';
 
-[ CDW, dCDW_dH,dCDW_dRet ] = CD2Lwake( H(NFoil+1:end),Ret(NFoil+1:end) );
- % wake has 2 sides of boundary layer -> double Dissipation 
-CD=[CD; 2*CDW];dCD_dH=[dCD_dH; 2*dCDW_dH]; dCD_dRet =[dCD_dRet; 2*dCDW_dRet];
-dCD_dHS=[dCD_dHS; zeros(NW,1)];
+[ f1l,f2l,der] =JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1);
 
-% mid point values
-CDM=(CD(2:end) + CD(1:end-1))/2;
-HSM=(HS(2:end) + HS(1:end-1))/2;
 
-HM= (H(1:end-1)+H(2:end))/2;
-RetM=(Ret(1:end-1)+Ret(2:end))/2;
-[CfM,dCfM_dH,dCfM_dRet]=CF2lam( HM, RetM);
+f1(indM)=f1l;
+f2(indM)=f2l;
+df1_dT(indM,:)=der.df1_dT;
+df1_dD(indM,:)=der.df1_dD;
+df1_dU(indM,:)=der.df1_dU;
+df1_ds(indM,:)=der.df1_ds;
+df2_dT(indM,:)=der.df2_dT;
+df2_dD(indM,:)=der.df2_dD;
+df2_dU(indM,:)=der.df2_dU;
+df2_ds(indM,:)=der.df2_ds;
 
-CfM= CfM/2 + (Cf(2:end) + Cf(1:end-1))/4;
 
-% Derivates T, D, U
-%-------------------------------------------------------------------------
+% Amplification Equation
+n=sol.c(ind); 
 
-% derivates in respect to T
-dRet_dT = U/nu;
-dH_dT   =-H./T;
-dHS_dT  = dHS_dH.*dH_dT;
-
-dCf_dT= dCf_dH.*dH_dT + dCf_dRet.*dRet_dT;
-dCD_dT= dCD_dH.*dH_dT + dCD_dRet.*dRet_dT + dCD_dHS.*dHS_dT;
-
-dCfM_dT1=dCfM_dH.*dH_dT(1:end-1)/4 + dCfM_dRet.*dRet_dT(1:end-1)/4 + dCf_dT(1:end-1)/4;
-dCfM_dT2=dCfM_dH.*dH_dT(2:end  )/4 + dCfM_dRet.*dRet_dT(2:end  )/4 + dCf_dT(2:end  )/4;
-
-%derivates in respect to D
-dH_dD   = 1./T;
-dCf_dD  = dCf_dH .*dH_dD;
-dHS_dD = dHS_dH.*dH_dD;
-dCD_dD  = dCD_dH .*dH_dD + dCD_dHS.*dHS_dD;
-
-dCfM_dD1=dCfM_dH.*dH_dD(1:end-1)/4 + dCf_dD(1:end-1)/4;
-dCfM_dD2=dCfM_dH.*dH_dD(2:end  )/4 + dCf_dD(2:end  )/4;
-
-%derivates in respect to U
-dRet_dU= T/nu;
-dCf_dU = dCf_dRet.*dRet_dU;
-dCD_dU = dCD_dRet.*dRet_dU;
-
-dCfM_dU1=  dCfM_dRet.*dRet_dU(1:end-1)/4 + dCf_dU(1:end-1)/4;
-dCfM_dU2=  dCfM_dRet.*dRet_dU(2:end  )/4 + dCf_dU(2:end  )/4;
-
-%-------------------------------------------------------------------------
+ [ f3(indM),df3_dC(indM,:), df3_dT(indM,:),df3_dD(indM,:),df3_dU(indM,:),df3_ds(indM,:) ] =...
+            AmplificationEquation(n,sol.T(ind),sol.U(ind),sol.HK(ind),sol.Ret(ind),h(indM)  );
 
 
 
+% pressure side
+%------------------------------------------------------------
 
-% on suction side point "1" and "2" are swapped because the stream goes in
-% opposit direction to the indexing
-sgn=[-ones(Nle-1,1);ones(N-Nle,1)];
+ind=(prf.Nle: sol.iTran(2)-1);
+indM=ind(1:end-1);
+s1=prf.sL(indM-prf.Nle+1)';
 
+[ f1l,f2l,der] = JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1);
 
-% finite differences of each panel
-dT =sgn.*(T(2:end) - T(1:end-1) );
-dU =sgn.*(U(2:end) - U(1:end-1) );
-dHS=sgn.*(HS(2:end)-HS(1:end-1) );
+f1(indM)=f1l;
+f2(indM)=f2l;
+df1_dT(indM,:)=der.df1_dT;
+df1_dD(indM,:)=der.df1_dD;
+df1_dU(indM,:)=der.df1_dU;
+df1_ds(indM,:)=der.df1_ds;
+df2_dT(indM,:)=der.df2_dT;
+df2_dD(indM,:)=der.df2_dD;
+df2_dU(indM,:)=der.df2_dU;
+df2_ds(indM,:)=der.df2_ds;
 
+% Amplification Equation
+n=sol.c(ind); 
+ [ f3(indM),df3_dC(indM,:), df3_dT(indM,:),df3_dD(indM,:),df3_dU(indM,:),df3_ds(indM,:) ] =...
+            AmplificationEquation(n,sol.T(ind),sol.U(ind),sol.HK(ind),sol.Ret(ind),h(indM)  );
 
+%                               turbulent part of Boundary
+%------------------------------------------------------------------------------------------------------------------------
 
-
-% momentum equation -> right hand side of Newton System
-f1=dT./h + (2*TM + DM).*dU./(h.*UM) - CfM;
-
-
-% derivates of momentum equation
-%-------------------------------------------------------------------------
-
-% momentum thickness T
-    % partial derivate
-    adT1=-sgn./h + dU./(h.*UM);
-    adT2= sgn./h + dU./(h.*UM);
+% suction side
+%------------------------------------------------------------
+ind=(sol.iTran(1) :-1: 1); %turbulent node indizes
+if length(ind)>1 % check for turbulent flow
+    indM=ind(2:end); % indices for midpoint values -> without transition panel
+    s1=prf.sU(ind(1:end-1))';
     
-    % total derivates
-    df1_dT1 =  adT1 -  dCfM_dT1;
-    df1_dT2 =  adT2 -  dCfM_dT2;
+    [ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,false);
+
+    f1(indM)=f1t;
+    f2(indM)=f2t;
+    f3(indM)=f3t;
+
+    df1_dT(indM,:)=der.df1_dT;
+    df1_dD(indM,:)=der.df1_dD;
+    df1_dU(indM,:)=der.df1_dU;
+    df1_ds(indM,:)=der.df1_ds;
+    df2_dT(indM,:)=der.df2_dT;
+    df2_dD(indM,:)=der.df2_dD;
+    df2_dU(indM,:)=der.df2_dU;
+    df2_dC(indM,:)=der.df2_dC;
+    df2_ds(indM,:)=der.df2_ds;
+    df3_dT(indM,:)=der.df3_dT;
+    df3_dD(indM,:)=der.df3_dD;
+    df3_dU(indM,:)=der.df3_dU;
+    df3_dC(indM,:)=der.df3_dC;
+    df3_ds(indM,:)=der.df3_ds;
+end
+
+
+% pressure side
+%------------------------------------------------------------
+ind=(sol.iTran(2):prf.N); %turbulent node indizes
+if length(ind)>1
+    indM=ind(1:end-1); % indices for midpoint values -> without transition panel
+    s1=prf.s(sol.iTran(2):end-1)';
     
-    clear a1dT1 a1dT2 
+    [ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,false);
     
-% displacement thickness D
-    % partial derivate
-    adD1= dU./(2*h.*UM) ;
-    adD2= dU./(2*h.*UM);
-    
-    % total derivates
-    df1_dD1 =  adD1 -  dCfM_dD1;
-    df1_dD2 =  adD2 -  dCfM_dD2;
+    f1(indM)=f1t;
+    f2(indM)=f2t;
+    f3(indM)=f3t;
 
-    clear a1dD1 a1dD2 
+    df1_dT(indM,:)=der.df1_dT;
+    df1_dD(indM,:)=der.df1_dD;
+    df1_dU(indM,:)=der.df1_dU;
+    df1_ds(indM,:)=der.df1_ds;
+    df2_dT(indM,:)=der.df2_dT;
+    df2_dD(indM,:)=der.df2_dD;
+    df2_dU(indM,:)=der.df2_dU;
+    df2_dC(indM,:)=der.df2_dC;
+    df2_ds(indM,:)=der.df2_ds;
+    df3_dT(indM,:)=der.df3_dT;
+    df3_dD(indM,:)=der.df3_dD;
+    df3_dU(indM,:)=der.df3_dU;
+    df3_dC(indM,:)=der.df3_dC;
+    df3_ds(indM,:)=der.df3_ds;
+end
 
-
-% tangential velocity U
-    % partial derivate
-    adU1=-sgn.*(2*TM+DM)./(h.*UM) -(2*TM+DM).*dU./(2*h.*UM.^2);
-    adU2= sgn.*(2*TM+DM)./(h.*UM) -(2*TM+DM).*dU./(2*h.*UM.^2);
-
-    
-    % total derivates
-    df1_dU1 =  adU1 -  dCfM_dU1;
-    df1_dU2 =  adU2 -  dCfM_dU2;
-
-    clear a1dU1 a1dU2  
-
-
-
-
-%-------------------------------------------------------------------------
-
-% upwinding for shape parameter Equation
-[upw, dupw_dH1,dupw_dH2]=Upwinding(H(1:NFoil-1),H(2:NFoil),false);
-[upwW, dupwW_dH1,dupwW_dH2]=Upwinding(H(NFoil+1:end-1),H(NFoil+2:end),true);
-upw=[upw; 0.5;upwW];dupw_dH1=[dupw_dH1;0.5;dupwW_dH1];dupw_dH2=[dupw_dH2;0.5;dupwW_dH2];
-dupw_dT1=dupw_dH1.*dH_dT(1:end-1);
-dupw_dT2=dupw_dH2.*dH_dT(2:end  );
-dupw_dD1=dupw_dH1.*dH_dD(1:end-1);
-dupw_dD2=dupw_dH2.*dH_dD(2:end  );
+% wake
+%------------------------------------------------------------
+ind=(prf.N+1:prf.N+wake.N);
+indM=ind(1:end-1);
+s1=wake.s(1:end-1)'+prf.sL(end);
 
 
-I=ones(N-1,1);
-CfM=(I-upw).*Cf(1:end-1) + upw.*Cf(2:end);
-CDM=(I-upw).*CD(1:end-1) + upw.*CD(2:end);
+[ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,true,wake.gap);
 
-dCfM_dT1= (I-upw).*dCf_dT(1:end-1) + (Cf(2:end)-Cf(1:end-1)).*dupw_dT1;
-dCfM_dT2= upw    .*dCf_dT(2:end  ) + (Cf(2:end)-Cf(1:end-1)).*dupw_dT2;
-dCfM_dD1= (I-upw).*dCf_dD(1:end-1) + (Cf(2:end)-Cf(1:end-1)).*dupw_dD1;
-dCfM_dD2= upw    .*dCf_dD(2:end  ) + (Cf(2:end)-Cf(1:end-1)).*dupw_dD2;
-dCDM_dT1= (I-upw).*dCD_dT(1:end-1) + (CD(2:end)-CD(1:end-1)).*dupw_dT1;
-dCDM_dT2= upw    .*dCD_dT(2:end  ) + (CD(2:end)-CD(1:end-1)).*dupw_dT2;
-dCDM_dD1= (I-upw).*dCD_dD(1:end-1) + (CD(2:end)-CD(1:end-1)).*dupw_dD1;
-dCDM_dD2= upw    .*dCD_dD(2:end  ) + (CD(2:end)-CD(1:end-1)).*dupw_dD2;
-dCfM_dU1= (I-upw).*dCf_dU(1:end-1) ;
-dCfM_dU2= upw    .*dCf_dU(2:end  ) ;
-dCDM_dU1= (I-upw).*dCD_dU(1:end-1) ;
-dCDM_dU2= upw    .*dCD_dU(2:end  ) ;
+f1(indM)=f1t;
+f2(indM)=f2t;
+f3(indM)=f3t;
 
-% dCfM_dT1= dCf_dT(1:end-1) /2;
-% dCfM_dT2= dCf_dT(2:end  ) /2;
-% dCfM_dD1= dCf_dD(1:end-1) /2;
-% dCfM_dD2= dCf_dD(2:end  ) /2;
-% dCDM_dT1= dCD_dT(1:end-1) /2;
-% dCDM_dT2= dCD_dT(2:end  ) /2;
-% dCDM_dD1= dCD_dD(1:end-1) /2;
-% dCDM_dD2= dCD_dD(2:end  ) /2;
-% dCfM_dU1= dCf_dU(1:end-1) /2;
-% dCfM_dU2= dCf_dU(2:end  ) /2;
-% dCDM_dU1= dCD_dU(1:end-1) /2;
-% dCDM_dU2= dCD_dU(2:end  ) /2;
+df1_dT(indM,:)=der.df1_dT;
+df1_dD(indM,:)=der.df1_dD;
+df1_dU(indM,:)=der.df1_dU;
+df2_dT(indM,:)=der.df2_dT;
+df2_dD(indM,:)=der.df2_dD;
+df2_dU(indM,:)=der.df2_dU;
+df2_dC(indM,:)=der.df2_dC;
+df2_ds(indM,:)=der.df2_ds;
+df3_dT(indM,:)=der.df3_dT;
+df3_dD(indM,:)=der.df3_dD;
+df3_dU(indM,:)=der.df3_dU;
+df3_dC(indM,:)=der.df3_dC;
+df3_ds(indM,:)=der.df3_ds;
 
 
-% shape parameter equation -> right hand side of Newton System
-f2= TM.*dHS./h + HSM.*(TM-DM).*dU./(h.*UM) - CDM + HSM.*CfM;
+%                               Transition panel
+%------------------------------------------------------------------------------------------------------------------------
+
+% suction side
+%------------------------------------------------------------
+
+ind= (sol.iTran(1)+1:-1:sol.iTran(1));
+indM=sol.iTran(1);
+n= [sol.c(ind(1));sol.tran.n2(1)];
+
+s1=prf.sU(sol.iTran(1)+1);
+% hl=sol.tran.Llam(1);
+% st=sl+hl;
+
+if ~sol.Tripping(1) % free Transition
+    [ fT, der,~ ] = TransitionEQ( n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) );   
+else % forced Transition 
+    [ fT, der,~ ] = TransitionEQ( n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) ,sol.sT(1),true);   
+    % add forced transition derivate
+    der.df1_ds(2)=der.df1_ds(2) + der.df1_dsF;
+    der.df2_ds(2)=der.df2_ds(2) + der.df2_dsF;
+    der.df3_ds(2)=der.df3_ds(2) + der.df3_dsF;
+end 
+f1(indM)=fT(1);
+f2(indM)=fT(2);
+f3(indM)=fT(3);
+
+df1_dT(indM,:)=der.df1_dT;
+df1_dD(indM,:)=der.df1_dD;
+df1_dU(indM,:)=der.df1_dU;
+df1_ds(indM,:)=der.df1_ds;
+df2_dT(indM,:)=der.df2_dT;
+df2_dD(indM,:)=der.df2_dD;
+df2_dU(indM,:)=der.df2_dU;
+df2_dC(indM,:)=der.df2_dC;
+df2_ds(indM,:)=der.df2_ds;
+df3_dT(indM,:)=der.df3_dT;
+df3_dD(indM,:)=der.df3_dD;
+df3_dU(indM,:)=der.df3_dU;
+df3_dC(indM,:)=der.df3_dC;
+df3_ds(indM,:)=der.df3_ds;
 
 
-% derivates of  shape parameter equation 
-%-------------------------------------------------------------------------
 
+% pressure side
+%------------------------------------------------------------
 
- % partial derivate in Respect to HS
-    df2_dHS1= -sgn.*TM./h + (TM-DM).*dU./(2*h.*UM) + CfM/2;
-    df2_dHS2=  sgn.*TM./h + (TM-DM).*dU./(2*h.*UM) + CfM/2;
+ind= (sol.iTran(2)-1:sol.iTran(2));
+indM=sol.iTran(2)-1;
+n= [sol.c(ind(1));sol.tran.n2(2)];
 
+s1=prf.sL(sol.iTran(2)-prf.Nle);
+% hl=sol.tran.Llam(2);
+% st=sl+hl;
 
-% momentum thickness T
-    % partial derivate
-    adT1= dHS./(2*h) + HSM.*dU./(2*h.*UM);
-    adT2= dHS./(2*h) + HSM.*dU./(2*h.*UM);
+if ~sol.Tripping(2) % free Transition
+    [ fT, der,~ ] = TransitionEQ( n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) );  
+else % forced Transition
+    [ fT, der,~ ] = TransitionEQ( n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) ,sol.sT(2),true);  
+    % add forced transition derivate
+    der.df1_ds(2)=der.df1_ds(2) + der.df1_dsF;
+    der.df2_ds(2)=der.df2_ds(2) + der.df2_dsF;
+    der.df3_ds(2)=der.df3_ds(2) + der.df3_dsF;
+end  
+f1(indM)=fT(1);
+f2(indM)=fT(2);
+f3(indM)=fT(3);
 
-    % total derivates
-    df2_dT1 =  adT1 + df2_dHS1.*dHS_dT(1:end-1) - dCDM_dT1 + HSM.*dCfM_dT1;
-    df2_dT2 =  adT2 + df2_dHS2.*dHS_dT(2:end)   - dCDM_dT2 + HSM.*dCfM_dT2;
-    
-    clear a1dT1 a1dT2 
-    
-% displacement thickness D
-    % partial derivate
-    adD1= -HSM.*dU./(2*h.*UM) ;
-    adD2= -HSM.*dU./(2*h.*UM) ;
-    
-    % total derivates
-    df2_dD1 =  adD1 + df2_dHS1.*dHS_dD(1:end-1) - dCDM_dD1 + HSM.*dCfM_dD1;
-    df2_dD2 =  adD2 + df2_dHS2.*dHS_dD(2:end)   - dCDM_dD2 + HSM.*dCfM_dD2;
+df1_dT(indM,:)=der.df1_dT;
+df1_dD(indM,:)=der.df1_dD;
+df1_dU(indM,:)=der.df1_dU;
+df1_ds(indM,:)=der.df1_ds;
+df2_dT(indM,:)=der.df2_dT;
+df2_dD(indM,:)=der.df2_dD;
+df2_dU(indM,:)=der.df2_dU;
+df2_dC(indM,:)=der.df2_dC;
+df2_ds(indM,:)=der.df2_ds;
+df3_dT(indM,:)=der.df3_dT;
+df3_dD(indM,:)=der.df3_dD;
+df3_dU(indM,:)=der.df3_dU;
+df3_dC(indM,:)=der.df3_dC;
+df3_ds(indM,:)=der.df3_ds;
 
-    clear a1dD1 a1dD2 
+%------------------------------------------------------------------------------------------------------------------------
 
-
-% tangential velocity U
-    % partial derivate
-    adU1= -sgn.*HSM.*(TM-DM)./(h.*UM) - HSM.*(TM-DM).*dU./(2*h.*UM.^2) ;
-    adU2=  sgn.*HSM.*(TM-DM)./(h.*UM) - HSM.*(TM-DM).*dU./(2*h.*UM.^2) ;
-
-    
-    % total derivates -> dHS_dU=0
-    df2_dU1 =  adU1  - dCDM_dU1 + HSM.*dCfM_dU1;
-    df2_dU2 =  adU2  - dCDM_dU2 + HSM.*dCfM_dU2;
-
-    clear a1dU1 a1dU2  
-    
-    
 % switch to m as variable
+%----------------------------------------------------
 
-%derivates of D,U in respect to m
-dD_dm=diag( 1./U ) - ( m./(U.^2)*ones(1,N) ).* D;
-dD1_dm=dD_dm(1:end-1,:);
-dD2_dm=dD_dm(2:end,:);
+% save the Indizes of equations and the corresponding values of 1 and 2 nodes
 
-dU1_dm=D(1:end-1,:);
-dU2_dm=D(2:end,:);
+% node indizes
+% suction side -> 1 and 2 are "switched" when walking in global arc length direction
+Node1= (2:prf.Nle-1);
+Node2= (1:prf.Nle-2);
+% pressure side
+Node1=[Node1, (prf.Nle:prf.N-1)];
+Node2=[Node2, (prf.Nle+1:prf.N)];
+% wake
+Node1=[Node1, (prf.N+1:prf.N+wake.N-1)];
+Node2=[Node2, (prf.N+2:prf.N+wake.N)  ];
 
+% Equation index -> no FDM equation for LE panel, TE panel and last wake node -> 9 additional Equations neccessary
+EQ = [(1:prf.Nle-2),(prf.Nle:prf.N-1),(prf.N+1:prf.N+wake.N-1) ];
+
+% different order for Equation System
+EQsys= [1:prf.Nle-2, prf.Nle+1:prf.N, prf.N+2:prf.N+wake.N];
 
 % total derivates of equations in respect to m   
 
+% Contribution of U
+dU1_dm = D(Node1,:); 
+dU2_dm = D(Node2,:); 
 
-% equation 1-> momentum Eq
-df1_dm=  (df1_dD1*ones(1,N)) .* dD1_dm  +  (df1_dD2*ones(1,N)) .* dD2_dm ...
-        +(df1_dU1*ones(1,N)) .* dU1_dm  +  (df1_dU2*ones(1,N)) .* dU2_dm;
+% Contribution of DI
+tmp=ones(1,length(sol.U));
+dD_dm=diag( 1./sol.U ) - ( sol.D./(sol.U)*tmp ).* D;
 
 
-% equation 2-> shape parameter Eq
-df2_dm=  (df2_dD1*ones(1,N)) .* dD1_dm  +  (df2_dD2*ones(1,N)) .* dD2_dm ...
-        +(df2_dU1*ones(1,N)) .* dU1_dm  +  (df2_dU2*ones(1,N)) .* dU2_dm;
+dD1_dm=dD_dm(Node1,:);
+dD2_dm=dD_dm(Node2,:);
+
+% stagnation point change
+dss_dU1=prf.dsLE_dG1*ones(Nges,1);dss_dU1(prf.Nle:end)=-dss_dU1(prf.Nle:end);% switch sign for pressure side and wake
+dss_dU2=prf.dsLE_dG2*ones(Nges,1);dss_dU2(1:prf.Nle-1)=-dss_dU2(1:prf.Nle-1);% switch sign for suction side
+
+
+% total derivates in respect to m
+df1_dm=   (df1_dD(EQ,1)*tmp) .*dD1_dm + (df1_dD(EQ,2)*tmp) .*dD2_dm ...
+        + (df1_dU(EQ,1)*tmp) .*dU1_dm + (df1_dU(EQ,2)*tmp) .*dU2_dm ...
+        + ( df1_ds(EQ,1) + df1_ds(EQ,2) )*ones(size(D(1,:))) ...
+           .* (dss_dU1(EQ)*D(prf.Nle-1,:) + dss_dU2(EQ)*D(prf.Nle,:) );
+
+
+df2_dm=   (df2_dD(EQ,1)*tmp) .*dD1_dm + (df2_dD(EQ,2)*tmp) .*dD2_dm ...
+        + (df2_dU(EQ,1)*tmp) .*dU1_dm + (df2_dU(EQ,2)*tmp) .*dU2_dm ...      
+        + ( df2_ds(EQ,1) + df2_ds(EQ,2) )*ones(size(D(1,:))) ...
+            .* (dss_dU1(EQ)*D(prf.Nle-1,:) + dss_dU2(EQ)*D(prf.Nle,:) );
     
-
- %-------------------------------------------------------------------------
+    
+df3_dm=   (df3_dD(EQ,1)*tmp) .*dD1_dm + (df3_dD(EQ,2)*tmp) .*dD2_dm ...
+        + (df3_dU(EQ,1)*tmp) .*dU1_dm + (df3_dU(EQ,2)*tmp) .*dU2_dm ...
+        + ( df3_ds(EQ,1) + df3_ds(EQ,2) )*ones(size(D(1,:))) ...
+            .* (dss_dU1(EQ)*D(prf.Nle-1,:) + dss_dU2(EQ)*D(prf.Nle,:) );
+      
  
+% T-part 
+% EQ 1
+JT1=zeros(Nges,Nges);
+JT1(EQsys,Node1)=diag(df1_dT(EQ,1));   
+JT1(EQsys,Node2)=JT1(EQsys,Node2) + diag(df1_dT(EQ,2));  
+
+% EQ 2
+JT2=zeros(Nges,Nges);
+JT2(EQsys,Node1)=diag(df2_dT(EQ,1));   
+JT2(EQsys,Node2)=JT2(EQsys,Node2) + diag(df2_dT(EQ,2));     
+% EQ 3
+JT3=zeros(Nges,Nges);
+JT3(EQsys,Node1)=diag(df3_dT(EQ,1));   
+JT3(EQsys,Node2)=JT3(EQsys,Node2) + diag(df3_dT(EQ,2));   
+
+% C-part
+% EQ 2
+JC2=zeros(Nges,Nges);
+JC2(EQsys,Node1)=diag(df2_dC(EQ,1));   
+JC2(EQsys,Node2)=JC2(EQsys,Node2) + diag(df2_dC(EQ,2));     
+% EQ 3
+JC3=zeros(Nges,Nges);
+JC3(EQsys,Node1)=diag(df3_dC(EQ,1));   
+JC3(EQsys,Node2)=JC3(EQsys,Node2) + diag(df3_dC(EQ,2));   
 
 
-% create Jacobi matrix for Newton System
+% total matrix
+J= zeros(3*Nges,3*Nges);
+EQ1= 3*EQsys - 2*ones(size(EQ));
+EQ2= 3*EQsys - ones(size(EQ));
+EQ3= 3*EQsys ;
 
-% contribution of momentum eq
-JT1= [diag(df1_dT1), zeros(N-1,1)]; % last node is never a "1" node
-JT2= [zeros(N-1,1), diag(df1_dT2)]; % first node is never a "2" node
-JTf1= JT1+JT2;
+f=zeros(3*Nges,1);
+f(EQ1)=f1(EQ); f(EQ2)=f2(EQ); f(EQ3)=f3(EQ);
 
-
-% contribution of shape parameter eq
-JT1= [diag(df2_dT1), zeros(N-1,1)]; % last node is never a "1" node
-JT2= [zeros(N-1,1), diag(df2_dT2)]; % first node is never a "2" node
-JTf2= JT1+JT2;
-
-
-%Total T part
-JT=zeros(2*length(f1),N);
-JT(1:2:end-1,1:1:N)=JTf1;
-JT(2:2:end,1:1:N)=JTf2;
-
-Jm=zeros(2*length(f1),N);
-Jm(1:2:end-1,:)=df1_dm;
-Jm(2:2:end,:)=df2_dm;
-
-J=[JT,Jm];
-
-rhs=zeros(2*length(f1),1);
-rhs(1:2:end-1)=f1;
-rhs(2:2:end)=f2;
-
-% J(2*Nle-3,:)=[];J(2*Nle-2,:)=[];rhs(2*Nle-3)=[];rhs(2*Nle-2)=[];
-% J(2*NFoil-1,:)=[];J(2*NFoil,:)=[];rhs(2*NFoil-1)=[];rhs(2*NFoil)=[];
+J(EQ1,1:Nges)= JT1(EQsys,:);
+J(EQ2,1:Nges)= JT2(EQsys,:);
+J(EQ3,1:Nges)= JT3(EQsys,:);
+J(EQ2,Nges+1:2*Nges)= JC2(EQsys,:);
+J(EQ3,Nges+1:2*Nges)= JC3(EQsys,:);
+J(EQ1,2*Nges+1:3*Nges)= df1_dm;
+J(EQ2,2*Nges+1:3*Nges)= df2_dm;
+J(EQ3,2*Nges+1:3*Nges)= df3_dm;
 
 
-% Set starting conditions to close LGS
-%---------------------------------------------------
+%-------------- right Hand side  -------------------------------------------------------
+% changes forced by new velocity Unew= Uold + D*dm
+deltaU=  sol.U - Unew ;    % negativ changes in U 
+DDS   = -sol.D./sol.U .*deltaU; % negativ changes in DI
 
-% -> values on Leading edge set by initial conditions -> no change
-J(2*Nle-3,:)=zeros(1,length(J(1,:))); J(2*Nle-3,Nle-1)=1;
-J(2*Nle-2,:)=zeros(1,length(J(1,:))); J(2*Nle-2,Nle)=1;
-rhs(2*Nle-3)=0;
-rhs(2*Nle-2)=0;
-ms=zeros(1,length(J(1,:))); ms(N+Nle-1)=1;
-mp=zeros(1,length(J(1,:))); mp(N+Nle)=1;
-J=[J; ms;mp];
-rhs=[rhs; 0;0];
 
-% values for first wake node set by initial conditions -> no change
-J(2*NFoil-1,:)=zeros(1,length(J(1,:))); J(2*NFoil-1,NFoil+1)=1;
-J(2*NFoil,:)  =zeros(1,length(J(1,:))); J(2*NFoil,N+NFoil+1)=1;
-rhs(2*NFoil-1)=0;
-rhs(2*NFoil)  =0;
+% incorporate forced changes for velocity and displacement thickness
+deltaU1= deltaU(Node1);
+deltaU2= deltaU(Node2);
+DDS1=DDS(Node1);
+DDS2=DDS(Node2);
 
-% minus from Newton method
-rhs=-rhs;
+add=zeros(size(f));
+
+% incorporate forced Leading edge arc length change
+stagn= dss_dU1.*deltaU(prf.Nle-1) + dss_dU2.*deltaU(prf.Nle);
+
+
+add(EQ1)=   df1_dU(EQ,1).*deltaU1 + df1_dU(EQ,2).*deltaU2 ...
+          + df1_dD(EQ,1).*DDS1    + df1_dD(EQ,2).*DDS2 ...
+          + (df1_ds(EQ,1) + df1_ds(EQ,2) ).*stagn(EQ) ;
+add(EQ2)=   df2_dU(EQ,1).*deltaU1 + df2_dU(EQ,2).*deltaU2 ...
+          + df2_dD(EQ,1).*DDS1    + df2_dD(EQ,2).*DDS2 ...
+          + (df2_ds(EQ,1) + df2_ds(EQ,2) ).*stagn(EQ) ;
+add(EQ3)=   df3_dU(EQ,1).*deltaU1 + df3_dU(EQ,2).*deltaU2 ...
+          + df3_dD(EQ,1).*DDS1    + df3_dD(EQ,2).*DDS2 ...
+          + (df3_ds(EQ,1) + df3_ds(EQ,2) ).*stagn(EQ) ;
+
+%--------------------------------------------------------------------------
+
+% Equations to close System
+% Index with empty equation
+EMP= [3*(prf.Nle-1)-2,3*(prf.Nle-1)-1,3*(prf.Nle-1),3*prf.Nle-2,3*prf.Nle-1,3*prf.Nle, 3*(prf.N+1)-2,3*(prf.N+1)-1,3*(prf.N+1)];
+
+
+% first suction side node
+%---------------------------------------
+[fs1,fs2, J1 ] = InitialNodeSys(sol.T(prf.Nle-1),sol.D(prf.Nle-1),sol.U(prf.Nle-1),sol.Vb(prf.Nle-1),prf.LE1);
+dfs1_dT= J1(1,1);
+dfs2_dT= J1(2,1);
+dfs1_dm= J1(1,2)*dD_dm(prf.Nle-1,:) + J1(1,3)*D(prf.Nle-1,:) ...
+            + J1(1,4)*(dss_dU1(prf.Nle-1)*D(prf.Nle-1,:) + dss_dU2(prf.Nle-1)*D(prf.Nle,:) );
+        
+dfs2_dm= J1(2,2)*dD_dm(prf.Nle-1,:) + J1(2,3)*D(prf.Nle-1,:) ...
+            + J1(2,4)*(dss_dU1(prf.Nle-1)*D(prf.Nle-1,:) + dss_dU2(prf.Nle-1)*D(prf.Nle,:) );
+        
+J(EMP(1), prf.Nle-1)=dfs1_dT; 
+J(EMP(1), 2*Nges+1:end)=dfs1_dm; 
+f(EMP(1))=fs1;
+add(EMP(1))=   J1(1,3)*deltaU(prf.Nle-1) + J1(1,2)*DDS(prf.Nle-1) + J1(1,4) .*stagn(prf.Nle-1) ;
+
+
+J(EMP(2), prf.Nle-1)=dfs2_dT; 
+J(EMP(2), 2*Nges+1:end)=dfs2_dm; 
+f(EMP(2))=fs2;
+add(EMP(2))=   J1(2,3)*deltaU(prf.Nle-1) + J1(2,2)*DDS(prf.Nle-1) + J1(2,4).*stagn(prf.Nle-1) ;
+
+% no Amplification change at initial points
+J(EMP(3), Nges + prf.Nle-1)= 1;
+
+
+% first pressure side node
+%---------------------------------------
+[fp1,fp2, J2 ] = InitialNodeSys(sol.T(prf.Nle),sol.D(prf.Nle),sol.U(prf.Nle),sol.Vb(prf.Nle),prf.LE2);
+dfp1_dT= J2(1,1);
+dfp2_dT= J2(2,1);
+dfp1_dm= J2(1,2)*dD_dm(prf.Nle,:) + J2(1,3)*D(prf.Nle,:)...
+            + J2(1,4)*(dss_dU1(prf.Nle)*D(prf.Nle-1,:) + dss_dU2(prf.Nle)*D(prf.Nle,:) );
+dfp2_dm= J2(2,2)*dD_dm(prf.Nle,:) + J2(2,3)*D(prf.Nle,:)...
+            + J2(2,4)*(dss_dU1(prf.Nle)*D(prf.Nle-1,:) + dss_dU2(prf.Nle)*D(prf.Nle,:) );
+        
+J(EMP(4), prf.Nle)=dfp1_dT; 
+J(EMP(4), 2*Nges+1:end)=dfp1_dm; 
+f(EMP(4))=fp1;
+add(EMP(4))=   J2(1,3)*deltaU(prf.Nle) + J2(1,2)*DDS(prf.Nle) + J2(1,4) .*stagn(prf.Nle) ;
+
+J(EMP(5), prf.Nle)=dfp2_dT; 
+J(EMP(5), 2*Nges+1:end)=dfp2_dm; 
+f(EMP(5))=fp2;
+add(EMP(5))=   J2(2,3)*deltaU(prf.Nle) + J2(2,2)*DDS(prf.Nle) + J2(2,4).*stagn(prf.Nle) ;
+
+
+J(EMP(6), Nges + prf.Nle  )= 1;
+
+
+% conditions for first wake node
+%---------------------------------------
+
+% T_N+1=T_1 + T_N
+J(EMP(7),1)      = 1;
+J(EMP(7),prf.N)  = 1;
+J(EMP(7),prf.N+1)=-1;
+
+
+% f= D_N+1 - D_1 - D_N - L_TE = 0
+fw= sol.D(prf.N+1) - sol.D(1) - sol.D(prf.N) - prf.gap;
+dfw_dm= dD_dm(prf.N+1,:) -  dD_dm(1,:) - dD_dm(prf.N,:);
+
+DDSw   = DDS(prf.N+1) - DDS(1) - DDS(prf.N);
+
+J(EMP(8),2*Nges+1:end)=dfw_dm; 
+f(EMP(8))= fw ;
+add(EMP(8))=DDSw;
+
+
+% f= - C_N+1 + (T_1*C_1 + T_N*C_N )/ (T_1+T_N) =0
+CN1= ( sol.c(1)*sol.T(1) + sol.c(prf.N)*sol.T(prf.N) )/( sol.T(1)+sol.T(prf.N) );
+dCN1_dC1= sol.T(1)    /( sol.T(1)+sol.T(prf.N) );
+dCN1_dCN= sol.T(prf.N)/( sol.T(1)+sol.T(prf.N) );
+dCN1_dT1= (sol.c(1)     -CN1)  /( sol.T(1)+sol.T(prf.N) );
+dCN1_dTN= (sol.c(prf.N) -CN1)  /( sol.T(1)+sol.T(prf.N) );
+J(EMP(9),1)=dCN1_dT1;
+J(EMP(9),prf.N)=dCN1_dTN;
+J(EMP(9),Nges+1)=dCN1_dC1;
+J(EMP(9),Nges+prf.N)=dCN1_dCN;
+J(EMP(9),Nges+prf.N+1)=-1; 
+
+f(EMP(9))=-sol.c(prf.N+1) + CN1;
+
+
+% combine right hand side
+rhs=-f;
+rhs=rhs + add;
+
+
 
 end
 

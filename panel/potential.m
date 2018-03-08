@@ -15,12 +15,8 @@ N=length(t)-1;
 % coefficient matrix
 [A,B]=VortexAndSourceDistr(prf);
 
-
-
 fld.A=A; 
-fld.B=[B, zeros(N+1,1)];
-%fld.B=[B(:,1:end-1), zeros(N+1,1)]; % linear ansatz, last node doesn´t contribute 
-%                                     -> q_TE depends on gamma_1 and is part of A
+fld.B=B;
 
 %Add streamfunction psi0 as unknown
 A=[A, -ones(N+1,1)];
@@ -50,7 +46,7 @@ fld.gamma = Lsg(1:end-1); % gammas -> solution vector without psi0 -> last eleme
 fld.psi0=Lsg(end);
 %if prf.IsSharp; fld.gamma=[fld.gamma ;Lsg(1)];
 
-
+fld.Ages=A;
 
 end
 

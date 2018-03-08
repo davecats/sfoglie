@@ -6,6 +6,11 @@ function [ psi ] = evaluateInviscFieldSol(xi,fld,prf,withoutTE)
 
 %---------------------------------------------------
 
+if nargin==3
+    withoutTE=false;
+end
+    
+
 L=prf.panels.L; % panel length
 
 % node coordinates 
@@ -39,7 +44,7 @@ psi1=-(1./(4*pi*L)).*( (X.*(X-2*L)-Y.^2).*lnr1 - ((L-X).^2-Y.^2).*lnr2 ...
 psi2=-(1./(4*pi*L)).*( (Y.^2-X.^2).*lnr1 +(X.^2-Y.^2-L.^2).*lnr2 ...
                  + 2*Y.*X.*(t2-t1) +(1/2)*L.*(L+2*X));
 
-if prf.IsSharp==false
+if prf.IsSharp==false && withoutTE==false;
     % Trailing edge coefficient for gamma_TE              
     GTE=psi1(end)+psi2(end);
 
