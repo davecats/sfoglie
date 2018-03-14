@@ -39,8 +39,7 @@ k=0; res=1;
         
         rhs=-f;
         dz=J\rhs;
-        res=max(abs(dz(1)/T2),abs(dz(2)/D2));
-        res=max(res,abs(dz(3)/C2)); 
+        res=max(abs( [dz(1)/T2,dz(2)/D2,dz(3)/C2]));
         % under relaxation for big changes
         if res>0.3; Rel=0.3/res; else Rel=1; end
         % update values
@@ -69,9 +68,7 @@ k=0; res=1;
         
         rhs=[-f;Htmp- D(2)/T(2)];
         dz=J\rhs;
-        res=max(abs(dz(1)/T2),abs(dz(2)/D2));
-        res=max(res,abs(dz(3)/C2)); 
-        res=max(res,abs(dz(4)/U(2))); 
+        res=max(abs( [dz(1)/T2,dz(2)/D2,dz(3)/C2, dz(4)/U(2)])); 
         % under relaxation for big changes
         if res>0.3; Rel=0.3/res; else Rel=1; end
         % update values

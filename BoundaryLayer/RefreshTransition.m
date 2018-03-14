@@ -63,12 +63,13 @@ k=0; res=1;
     C2=C2 + Rel*dz(3);   
     U2=U2 + Rel*dz(4);  
 
-    H2= D2/T2;  
-
     dh= max(0,1.02-D2/T2);
     D2=D2 +dh*T2;
     C2=min(C2,0.3);
     C2=max(C2,0.0000001);
+    
+    H2= D2/T2; 
+    
     
     k=k+1;      
 end % <- End of iteration for current intervall

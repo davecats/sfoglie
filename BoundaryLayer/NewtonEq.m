@@ -21,7 +21,7 @@ prf.dsLE_dG2= prf.LE1/(Uinv(prf.Nle) + Uinv(prf.Nle-1));
 %NleStart=prf.Nle;
 GamStart= [Uinv(1:prf.Nle-1); -Uinv(prf.Nle:end)];
 
-while res>1e-4 && k<it 
+while res>3e-4 && k<it 
      % correct adjust sign for pressure/suction side
      sgn=ones(size(D0));
      sgn(1:prf.Nle-1,1:prf.Nle-1)=-sgn(1:prf.Nle-1,1:prf.Nle-1);

@@ -5,11 +5,11 @@ function [ Cg, Cq ] = GradPsiN( prf,wake )
 
 ejx= prf.panels.e(1,:);
 ejy= prf.panels.e(2,:);
-nix= [wake.n(1,1); wake.n(1,:)'];
-niy= [wake.n(2,1); wake.n(2,:)'];
+% nix= [wake.n(1,1); wake.n(1,:)'];
+% niy= [wake.n(2,1); wake.n(2,:)'];
 
-% nix=wake.nn(1,:)';
-% niy=wake.nn(2,:)';
+nix=wake.nn(1,:)';
+niy=wake.nn(2,:)';
 
 % %k1=n1i*e1j + n2i*e2j =dX_dn
 k1=  nix*ejx +  niy*ejy ;

@@ -173,14 +173,10 @@ df_dD=[df1_dD2; df2_dD2];
 df_dT=[df1_dT2; df2_dT2]; 
 df_dh=[df1_dh; df2_dh]; 
 
-tmp=find(~isreal(f1));
-if ~isempty(tmp)
-    disp('gg')
-end
-tmp=find(~isreal(f2));
-if ~isempty(tmp)
-    disp('gg')
-end
+% tmp=find(~isreal(f1));
+% if ~isempty(tmp)
+%     disp('gg')
+% end
 
 end
 

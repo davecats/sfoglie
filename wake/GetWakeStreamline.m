@@ -42,15 +42,15 @@ sw=zeros(1,NW);
 lw=zeros(1,NW-1);
 
 
-
 for i=1:NW-1 
     xw(i+1,:)=guess;
   
     %------------- iterate to find Loadingpoint with exact psi=psi0  -------
-    res=1;k=0;
-    while res>1e-6 && k<50 % prevent endless loop
+    res=1;k=0; dpmin=2;noConv=false;
+    while res>1e-6 && k<40 % prevent endless loop
         psi= evaluateInviscFieldSol(xw(i+1,:),fld,prf);
-
+        
+        
         [dg_dx,dg_dy]=GradPsi(xw(i+1,1), xw(i+1,2),prf);
         dpsi_dx=-dg_dx*fld.gamma;
         dpsi_dy=-dg_dy*fld.gamma;
@@ -63,18 +63,47 @@ for i=1:NW-1
 
         dx=  (f(2)*J(1,2) - f(1)*J(2,2))/( J(1,1)*J(2,2)- J(1,2)*J(2,1) );
         dy=  (f(1)*J(2,1) - f(2)*J(1,1))/( J(1,1)*J(2,2)- J(1,2)*J(2,1) );
-
+        
+        
+        
+        % relativ difference
+        dp= abs((psi-psi0)/psi0);
+        if dp<dpmin
+           dpmin=dp; % minimum deviation of psi
+           xmin=xw(i+1,:);
+        end
+        
         res=max(abs(f./[psi0,h]));
         % refresh for new iteration
         xw(i+1,:)= xw(i+1,:) + [dx, dy];
+        
+        % if Newtonmethod does not converge or converges to wrong solution
+        if xw(i+1,1)<xw(i,1) || abs(xw(i+1,2)-xw(i,2)) > 0.5*h
+           noConv=true; break 
+        end
+        
         k=k+1;
     end
 
+    if noConv || dpmin>0.008 
+        % in case of divergence or to big deviation of psi0 -> try intersection method
+        [xI, psiI]=Intersection(fld,prf,guess,h,psi0);
+        if abs((psiI-psi0)/psi0)<0.008 ;
+           xw(i+1,:)= xI; 
+        else
+           xw(i+1,:)=guess; 
+        end
+    else
+        xw(i+1,:)= xmin;
+    end
+    
     lw(i)=norm(xw(i+1,:)-xw(i,:));
     delta=xw(i+1,:)-xw(i,:);
     guess= xw(i+1,:) + grading*delta;
     sw(i+1)=sw(i) + lw(i);
     h=lw(i)*grading;
+    
+    clear nearest
 end
 
 
@@ -116,73 +145,6 @@ wg=zeros(size(wake.s));
 wg(ZN>0)= AN* (A+B*ZN(ZN>0)).*ZN(ZN>0).^2;
 wake.gap=wg';
 
-
-%dy=prf.nodes.Y(2)-prf.nodes.Y(end-1);
-
-% % OLD -Secant method
-% for i=1:NW-1 % each node of wake
-%     psig=evaluateInviscFieldSol(guess,fld,prf);
-%     found=false;k=1;
-%     
-%     % find point on wake streamline -> psi=psi0
-%     
-%     % Einschlussintervall finden
-%     %------------------------------------------------
-%     while found==false && k<20 % prevent endless loop
-%         psip = evaluateInviscFieldSol(guess+[0, k*dy],fld,prf);
-%         d1=psig-psi0;
-%         d2=psip-psi0;
-%         if sign(d1)*d2 < 0 % Einschlussintervall gefunden
-%           psi1=psig;
-%           psi2=psip;
-%           found=true;
-%           y2 = guess(2) + k*dy;
-%         else
-%           psim=evaluateInviscFieldSol(guess-[0, k*dy],fld,prf);  
-%           d2=psim-psi0;  
-%           if sign(d1)*d2 < 0 % Einschlussintervall gefunden
-%             psi1=psig;
-%             psi2=psim;  
-%             found=true;
-%             y2 = guess(2) - k*dy;
-%           end
-%         end
-%         k=k+1;   
-%     end
-%     %------------------------------------------------
-%     y1=guess(2);
-%     dn=1; l=0;
-%     % Sekanten Methode
-%     %------------------------------------------------
-%     res=1e-12; % residuum
-%     while  abs(dn)>res && l<40 % prevent endless loop
-%         d1=psi1-psi0;
-%         d2=psi2-psi0;
-%         yn=(abs(d1)*y2 + abs(d2)*y1) /(abs(d1)+abs(d2));
-%         new=[guess(1), yn];
-%         psin=evaluateInviscFieldSol(new,fld,prf);
-%         dn=psin-psi0;
-%         if sign(dn)*d1 <0
-%            psi2 = psin;
-%            y2=yn;
-%         else
-%            psi1 = psin;
-%            y1=yn; 
-%         end
-%         l=l+1;
-%     end
-%     %------------------------------------------------
-%     xw(i+1,:)=[guess(1), yn];
-%     grad=1+(grading-1)/(1+0.0002*(i-1)^2); % make grading go to 1 at end of wake
-%     guess=xw(i+1,:) + grad*(xw(i+1,:)-xw(i,:));
-%     lw(i)=norm(xw(i+1,:)-xw(i,:));
-%     sw(i+1)=sw(i) + lw(i);
-%     
-% %     if lw(i)>20*lw(1)
-% %        grading=1; 
-% %     end
-%     
-% end
 
 % % starting y-step size
 % dy1=0.2*( prf.nodes.Y(2)-prf.nodes.Y(end-1) );

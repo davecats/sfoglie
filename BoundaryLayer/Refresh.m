@@ -116,6 +116,8 @@ for section=1:3
                 
                 dz=J\rhs;
                 
+                if ~isempty(find(~isreal(dz),1)); res=1; break; end % prevent complex values
+                
                 res=max(abs( [dz(1)/T2,dz(2)/D2,dz(3)/U2] ));
                 % under relaxation for big changes
                 if res>0.3; Rel=0.3/res; else Rel=1; end            
@@ -123,11 +125,6 @@ for section=1:3
                 T2=T2 + Rel*dz(1);
                 D2=D2 + Rel*dz(2);
                 U2=U2 + Rel*dz(3);
-                
-                tmp=find(~isreal(U2));
-                if ~isempty(tmp)
-                   disp('gg')
-                end
 
             else % ---------------- turbulent -----------------
                 
@@ -149,8 +146,9 @@ for section=1:3
                 
                 dz=J\rhs;
                 
-                res=max(abs( [dz(1)/T2,dz(2)/D2,dz(3)/C2,dz(4)/U2] ));
+                if ~isempty(find(~isreal(dz),1)); res=1; break; end % prevent complex values
                 
+                res=max(abs( [dz(1)/T2,dz(2)/D2,dz(3)/C2,dz(4)/U2] ));
 
                 if res>0.3; Rel=0.3/res; else Rel=1; end
                 T2=T2 + Rel*dz(1);
@@ -165,8 +163,8 @@ for section=1:3
              
             % correction for to small H values
             if IsWake; Hlim=1.00005; else Hlim=1.02; end
-            dh= max(0,Hlim-( D2-gap(i+step) )/T2);
-            D2=D2 +dh*T2;
+            dh= max(0,Hlim - ( D2-gap(i+step) )/T2);
+            D2= D2 +dh*T2;
             H2= ( D2-gap(i+step) )/T2;
            
            k=k+1; 
@@ -219,10 +217,8 @@ for section=1:3
 
             % transition occures in current intervall
             if sol.c(i+step)>nkrit || tr; 
-                
-                if sol.c(i+step)>nkrit; sol.Tripping(section)=false; end
-                
-                
+                % set Tripping false if free Transition occurs earlier
+                if sol.c(i+step)>nkrit; sol.Tripping(section)=false; end 
                 
                 lam=false;  
                 % solve the Equations for Transition panel 
