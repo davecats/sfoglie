@@ -30,16 +30,16 @@ if prf.IsSharp
 %     xB=prf.nodes.X(1) - 0.1*min(prf.panels.L(1),prf.panels.L(2))*Cb;
 %     yB=prf.nodes.Y(1) - 0.1*min(prf.panels.L(1),prf.panels.L(2))*Sb; 
     
-     A(end,:)=zeros(1,N+1); % delete Equation from last node -> equals to first node
+     A(end,:)=zeros(1,N+2); % delete Equation from last node -> equals to first node
      t(end)=0;
-     %A(end,2)=-2;A(end,3)=1;A(end,end-1)=2;A(end,end-2)=-1; 
-     A(end,1)=1;
-else
-    % add Kutta Condition
-    t=[t;0];
-    A=[A; zeros(1,N+2)];
-    A(end,[1, N+1])=[1,1];
+     A(end,2)=-2;A(end,3)=1;A(end,end-2)=2;A(end,end-3)=-1; 
+     A(end,1)=1;A(end,end-1)=-1;
 end
+% add Kutta Condition
+t=[t;0];
+A=[A; zeros(1,N+2)];
+A(end,[1, N+1])=[1,1];
+
 
 Lsg=A\t;    %solve the equation system
 fld.gamma = Lsg(1:end-1); % gammas -> solution vector without psi0 -> last element

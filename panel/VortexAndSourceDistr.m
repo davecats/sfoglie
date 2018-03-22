@@ -8,14 +8,12 @@ function [ A,B] = VortexAndSourceDistr( prf )
 
 % with TE panel
 L=prf.panels.L; % panel length
-if prf.IsSharp
-    N=length(L);
-else
-    N=length(L)-1; % number of panels (without TE panel), N+1 number of nodes
-end
+
+N=length(L)-1; % number of panels (without TE panel), N+1 number of nodes
+
 
  % node coordinates 
- [X1,X2,Y]=GetLocalRelCoord(transpose(prf.nodes.X),transpose(prf.nodes.Y),prf);
+ [X1,X2,Y]=GetLocalRelCoord(prf.nodes.X',prf.nodes.Y',prf);
 
 
 r1=X1.^2 + Y.^2; % r^2 
@@ -69,23 +67,18 @@ psi = (1/(2*pi))*( -X1.*t1 + X2.*t2 + Y.*(lnr1 - lnr2) );
 B=[psi(:,1:end-1), zeros(N+1,1)];
 qTE=psi(:,end);
 
+if prf.IsSharp
+    GTE=(1/(2*pi))*Y(:,end)*pi;
+end
 
-    
-%     % TE circulation
-%      GTE =  (1/(2*pi))*( X(:,end).*lnr1(:,end) -  X2(:,end).*lnr2(:,end) ...
-%                          + Y(:,end).*(t2(:,end) - t1(:,end)) - LM(:,end) );
-%     % TE source
-%     qTEt = (1/(2*pi))*( - X(:,end).*t1(:,end) + X2(:,end).*t2(:,end) ...
-%                        + Y(:,end).*(lnr1(:,end) - lnr2(:,end)) );
+% Add Trailing edge influence to matrix A
+TE=  prf.SdotT*GTE + prf.ScrossT*qTE; % s_t gamma_TE + scrosst q_TE
 
-    
-   
-    % Add Trailing edge influence to matrix A
-    TE=  prf.SdotT*GTE + prf.ScrossT*qTE; % s_t gamma_TE + scrosst q_TE
-    %A(:,1)=A(:,1)+TE; % kutta Condition already applied here
+%A(:,1)=A(:,1)+TE; % kutta Condition already applied here
 
-    A(:,1)=A(:,1)+TE/2; 
-    A(:,end)=A(:,end)-TE/2;
+A(:,1)=A(:,1)+TE/2; 
+A(:,end)=A(:,end)-TE/2;
+
 
 
 

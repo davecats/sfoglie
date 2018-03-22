@@ -4,7 +4,7 @@ function [ new, psin ] = Intersection( fld,prf,guess,h,psi0 )
 
 
 
-
+itmax=30;
 psig=evaluateInviscFieldSol(guess,fld,prf);
 found=false;k=1;
 
@@ -16,7 +16,7 @@ found=false;k=1;
 dy=0.1*h;
 
 
-while found==false && k<20 % prevent endless loop
+while found==false && k<itmax % prevent endless loop
     psip = evaluateInviscFieldSol(guess+[0, k*dy],fld,prf);
     d1=psig-psi0;
     d2=psip-psi0;
@@ -36,6 +36,11 @@ while found==false && k<20 % prevent endless loop
       end
     end
     k=k+1;   
+end
+
+if ~found
+   error('No intersectionintervall found')
+   return 
 end
 %------------------------------------------------
 y1=guess(2);

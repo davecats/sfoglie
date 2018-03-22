@@ -7,21 +7,19 @@ function p=create_panels(p)
 
 
 %identify if TE is sharp or not
-if p.nodes.X(1)==p.nodes.X(end) && p.nodes.Y(1)==p.nodes.Y(end)
+if abs(p.nodes.X(1)-p.nodes.X(end))<1e-7 && abs(p.nodes.Y(1)-p.nodes.Y(end))<1e-7
     p.IsSharp=true;
-    x1=p.nodes.X(1:end-1);
-    x2=p.nodes.X(2:end);
-    y1=p.nodes.Y(1:end-1);
-    y2=p.nodes.Y(2:end);  
-    p.N=p.N-1;
+    % make shure the Trailingedge point does exactly coincide
+    p.nodes.X(end)=p.nodes.X(1);
+    p.nodes.Y(end)=p.nodes.Y(1);
 else
     p.IsSharp=false;
-    x1=p.nodes.X(1:end);
-    x2=[p.nodes.X(2:end), p.nodes.X(1)];
-    y1=p.nodes.Y(1:end);
-    y2=[p.nodes.Y(2:end), p.nodes.Y(1)];   
 end
 
+x1=p.nodes.X(1:end);
+x2=[p.nodes.X(2:end), p.nodes.X(1)];
+y1=p.nodes.Y(1:end);
+y2=[p.nodes.Y(2:end), p.nodes.Y(1)];   
 
 p.panels.X = [x1; x2]; 
 p.panels.Y = [y1; y2]; 
@@ -36,21 +34,20 @@ n=[-e(2,:);e(1,:)];
 % arc length
 s=[0,cumsum(L(1:end-1))];
 
-% angle of panel tangent vector to x- axis
-
-%p.panels.phi=phi2pi(e);
-% theta(phi>pi/2)=phi(phi>pi/2)-3/2*pi;
-% theta(phi<=pi/2)=phi(phi<=pi/2)+1/2*pi;
-% theta=transpose(theta);
-% theta=atan2(e(:,1),-e(:,2));
+% angle of panel tangent vector to y- axis
 p.panels.theta=atan2(e(1,:),-e(2,:));
 
 if p.IsSharp
-    p.panels.theta(end)=pi;
     p.SdotT=0;
     p.ScrossT=1;
-    p.panels.nn=(n(:,1:end-1)+n(:,2:end))/2;
-    p.panels.nn=[n(:,1),p.panels.nn, n(:,end)];
+    p.nodes.n=(n(:,1:end-2)+n(:,2:end-1))/2;
+    p.nodes.n=[n(:,1),p.nodes.n, n(:,end)];
+    % dummy TE
+    p.panels.theta(end)=pi;
+    e(:,end)=[0;1];
+    n(:,end)=[-1;0];
+    
+    p.gap=0;
 else
     eTE=e(:,end); % trailing edge tangent vector
     e1=e(:,1); % tangent vector first panel
@@ -62,6 +59,9 @@ else
     
     p.nodes.n=(n(:,1:end-2)+n(:,2:end-1))/2;
     p.nodes.n=[n(:,1),p.nodes.n, n(:,end-1)];
+    
+    % TE Gap
+    p.gap=p.ScrossT*L(end);
 end
 
 
@@ -70,8 +70,7 @@ p.panels.e=e;
 p.s=s;
 p.panels.L=L;
 
-% TE Gap
-p.gap=p.ScrossT*p.panels.L(end);
+
 
 
 end

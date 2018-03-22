@@ -286,7 +286,11 @@ for section=1:3
     
 end
 
-
+if prf.IsSharp
+   % make sure the velocities for both TE points are the same 
+   sol.U(1)=sol.U(prf.N+1);
+   sol.U(prf.N)=sol.U(prf.N+1);
+end
 
 
 end

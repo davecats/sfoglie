@@ -102,8 +102,11 @@ indW=prf.N+1:prf.N+wake.N; % turbulent node indizes
 
 I=zeros(size(solnew.T));
 solnew.Cf=I;
-solnew.Cf(indL)= 2*CF2lam(solnew.HK(indL), solnew.Ret(indL));
-solnew.Cf(indT)= 2*CF2turb(solnew.HK(indT), solnew.Ret(indT));
+solnew.Cf(indL)= CF2lam(solnew.HK(indL), solnew.Ret(indL));
+solnew.Cf(indT)= CF2turb(solnew.HK(indT), solnew.Ret(indT));
+
+solnew.tau=solnew.Cf .*(solnew.U/prf.Uinfty).^2;
+solnew.Cf=2*solnew.Cf;
 
 solnew.HS=I;
 solnew.HS(indL)=H32lam(solnew.HK(indL));
@@ -121,8 +124,11 @@ solnew.CD(indW)=CD2turb(solnew.HK(indW),solnew.Ret(indW),solnew.HS(indW), solnew
 solnew.CD=0.5*solnew.HS.*solnew.CD;
 
 
-solnew.Cp=1-solnew.U.^2;
-solnew.tau=0.5*solnew.Cf .*solnew.U.^2;
+solnew.Cp=1-(solnew.U/prf.Uinfty).^2;
+if prf.IsSharp
+   solnew.Cp(prf.N)=solnew.Cp(1); 
+end
+
 
 
 Xt=prf.nodes.X(solnew.iTran);
@@ -135,6 +141,7 @@ wt= solnew.tran.Llam./(solnew.tran.Llam + sol.tran.Lturb)  ;
 
 xTran= wl.*Xl + wt.*Xt;
 
+% Write out
 if ~solnew.Tripping(1); 
     solnew.xT(1)=xTran(1); 
     disp(['suction side: transition at x/c=',num2str(xTran(1))]);
@@ -146,7 +153,49 @@ if ~solnew.Tripping(2);
     disp(['pressure side: transition at x/c=',num2str(xTran(2))]);
 else
     disp(['pressure side: forced transition at x/c=',num2str(solnew.xT(2))]);
-end   
+end  
+
+% Integral values
+
+% lift coefficient
+h=( prf.panels.X(2,:)-prf.panels.X(1,:) )*cos(prf.alfa) + ( prf.panels.Y(2,:)-prf.panels.Y(1,:) )*sin(prf.alfa);
+h=h';
+
+Cpp=[solnew.Cp(1:prf.N);solnew.Cp(1)];
+solnew.CL   = 0.5*sum( h.*( Cpp(2:end) + Cpp(1:end-1) ) );% midpoint rule
+
+    % shear forces of each panel in x and y direction 
+tauX= abs(solnew.tau(1:prf.N).*prf.panels.e(1,:)');
+tauY= abs(solnew.tau(1:prf.N).*prf.panels.e(2,:)');
+
+tauXU= [0;tauX(prf.Nle-1:-1:1)];
+tauYU= [0;tauY(prf.Nle-1:-1:1)];
+tauXL= [0;tauX(prf.Nle:prf.N)];
+tauYL= [0;tauY(prf.Nle:prf.N)];
+sU=[0,prf.sU(end:-1:1)];
+sL=[0,prf.sL];
+
+% integrate x-component -> simpson law
+FX=NumInt(tauXU,sU) + NumInt(tauXL,sL);
+FY=NumInt(tauYU,sU) + NumInt(tauYL,sL);
+
+% viscous Drag Coefficient
+solnew.Cnu=2*( FX*cos(prf.alfa) + FY*sin(prf.alfa) );
+
+% Drag coefficient 
+solnew.Cdrag=DragCoeff(solnew.T(end),solnew.HK(end),solnew.U(end)/prf.Uinfty, 1 );
+
+
+
+% integral Cf
+indU=prf.Nle-1:-1:1;
+indL=prf.Nle:prf.N;
+
+% midpoint rule
+[~,tmp]=NumInt([0;solnew.tau(indU)],[0,prf.sU(end:-1:1)] ,2,true);
+solnew.CI_U=tmp;
+[~,tmp]=NumInt([0;solnew.tau(indL)],[0,prf.sL]           ,2,true);
+solnew.CI_L=tmp;
 
 
 end

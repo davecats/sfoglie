@@ -79,12 +79,13 @@ if strcmp(Val,'delta')
     hold on
     plot( sges(ind), sol.D(ind) );
     plot( sges(ind), sol.T(ind) );
-    plot( sX(ind), DX(ind) );
-    plot( sX(ind), TX(ind) );
+    %plot( sX(ind), DX(ind) );
+    %plot( sX(ind), TX(ind) );
+    %legend('$\delta_1$','$\delta_2$','$\delta_1$ XFoil','$\delta_2$ XFoil','location','best'); 
     title('Displacement thickness and momentum thickness')
     xlabel(' s')
     ylabel( '\delta_i' )
-    legend('$\delta_1$','$\delta_2$','$\delta_1$ XFoil','$\delta_2$ XFoil','location','best'); 
+    legend('$\delta_1$','$\delta_2$','location','best'); 
 elseif strcmp(Val,'U')
     figure
     hold on
@@ -97,25 +98,27 @@ elseif strcmp(Val,'U')
 elseif strcmp(Val,'cf') || strcmp(Val,'Cf')
     figure
     hold on
-    plot( prf.nodes.X(1:prf.Nle-1), sol.Cf(1:prf.Nle-1));
+    plot( prf.nodes.X(1:prf.Nle), sol.Cf(1:prf.Nle));
     plot( prf.nodes.X(prf.Nle:prf.N), sol.Cf(prf.Nle:prf.N));
 %     plot( XX(1:NleX-1), CfX(1:NleX-1));
 %     plot( XX(NleX-1:NX), CfX(NleX-1:NX));
+%     legend('suction side','pressure side','XFoil: suction','XFoil: pressure','location','best');
     title('skin friction coefficient')
     xlabel(' x ')
     ylabel( ' C_f ' )
-    legend('suction side','pressure side','XFoil: suction','XFoil: pressure','location','best'); 
+    legend('suction side','pressure side','location','best');
 elseif strcmp(Val,'tau') || strcmp(Val,'Tau')
     figure
     hold on
-    plot( prf.nodes.X(1:prf.Nle-1), sol.tau(1:prf.Nle-1));
+    plot( prf.nodes.X(1:prf.Nle), sol.tau(1:prf.Nle));
     plot( prf.nodes.X(prf.Nle:prf.N), sol.tau(prf.Nle:prf.N));
 %     plot( XX(1:NleX-1), tauX(1:NleX-1));
 %     plot( XX(NleX:NX), tauX(NleX:NX));
+%     legend('suction side','pressure side','XFoil: suction','XFoil: pressure','location','best'); 
     title('Wall shear stress')
     xlabel(' x ')
     ylabel( ' \tau_w ' )
-    legend('suction side','pressure side','XFoil: suction','XFoil: pressure','location','best'); 
+    legend('suction side','pressure side','location','best'); 
 elseif strcmp(Val,'CD') || strcmp(Val,'cD')
     figure
     hold on
@@ -133,7 +136,7 @@ elseif strcmp(Val,'CD') || strcmp(Val,'cD')
   elseif strcmp(Val,'cp') || strcmp(Val,'Cp')
     figure
     hold on
-    plot( prf.nodes.X(1:prf.Nle-1), sol.Cp(1:prf.Nle-1));
+    plot( prf.nodes.X(1:prf.Nle), sol.Cp(1:prf.Nle));
     plot( prf.nodes.X(prf.Nle:prf.N), sol.Cp(prf.Nle:prf.N));
     legend('suction side','pressure side','location','best')
     title('Pressure coefficient')
@@ -164,17 +167,20 @@ XLw=[XT(end),XTw(2:end)];
 YTw =wake.y' + fU* nwU(2,:).*transpose(sol.D(prf.N+1:end))/2;
 YTw2=wake.y' - fL* nwL(2,:).*transpose(sol.D(prf.N+1:end))/2;
 
+xtt= [XUw(end:-1:1),XT,XLw];
+ytt= [YTw(end:-1:1),YT,YTw2];
+
 tmp=round(prf.alfa*180/pi);
-str={['\alpha=',num2str(tmp),' degree'],['Re=',num2str(Re)],['C_L=',num2str(sol.CL)] };
+str={['\alpha=',num2str(tmp),' degree'],['Re=',num2str(Re)],['C_L=',num2str(sol.CL)],['C_d=',num2str(sol.Cdrag)],['C_\nu=',num2str(sol.Cnu)],['C_d/C_L=',num2str(sol.Cdrag/sol.CL)] };
 
 figure; 
 hold on; box on;
 plot([prf.panels.X]',[prf.panels.Y]','k','Linewidth',2);
 plot(wake.x,wake.y,'k','Linewidth',1.2);
-plot(XT,YT,'b');
-plot(XUw,YTw,'b');
-plot(XLw,YTw2,'b');
-text(wake.x(end)-0.5*(wake.x(end)-prf.nodes.X(1)) ,0.48, str);
+plot(xtt,ytt,'b');
+% plot(XUw,YTw,'b');
+% plot(XLw,YTw2,'b');
+text(wake.x(end)-0.7*(wake.x(end)-prf.nodes.X(1)) ,0.48, str);
 title('Profile with displacement thickness')
 axis equal; xlabel('x'); ylabel('y') 
 clear XT YT XTw wUpper wLower fU fL nwU nwL XUw XLw YTw YTw2
@@ -183,4 +189,16 @@ clear XT YT XTw wUpper wLower fU fL nwU nwL XUw XLw YTw YTw2
 
 
 end
+
+
+
+% dat=[xtt;ytt]';
+% 
+% exp=dat(1:3:end,:);
+% dlmwrite('thicked',exp);
+
+
+
+
+
 

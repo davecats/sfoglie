@@ -27,7 +27,7 @@ X2=(ones(M,1)*e(1,:)).*dx2+(ones(M,1)*e(2,:)).*dy2;
 Y =(ones(M,1)*n(1,:)).*dx1+(ones(M,1)*n(2,:)).*dy1;
 
 % no TE part
-if nargin==4
+if nargin==4 && withoutTE
     X1=X1(:,1:end-1);
     X2=X2(:,1:end-1);
     Y=Y(:,1:end-1);

@@ -12,7 +12,7 @@ if nargin==3
 end
     
 if ~IsWake
-    [X1,X2,Y]=GetLocalRelCoord( xi,eta,handle,'noTE');
+    [X1,X2,Y]=GetLocalRelCoord( xi,eta,handle,true);
     L=handle.panels.L(1:end-1); % panel length without TE panel
 
     

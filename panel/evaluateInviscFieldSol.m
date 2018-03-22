@@ -48,12 +48,16 @@ if prf.IsSharp==false && withoutTE==false;
     % Trailing edge coefficient for gamma_TE              
     GTE=psi1(end)+psi2(end);
 
-    % psi1 is coefficient for j-th node in j-th panel -> last node doesn´t appear 
-    psi1=[psi1(1:end-1), 0];
-    % psi2 is coefficient for j+1-th node in j-th panel -> first node doesn´t appear 
-    psi2=[0, psi2(1:end-1)];
+elseif prf.IsSharp
+    GTE=(1/(2*pi))*Y(:,end)*pi;
+    
 end
-
+% psi1 is coefficient for j-th node in j-th panel -> last node doesn´t appear 
+psi1=[psi1(1:end-1), 0];
+% psi2 is coefficient for j+1-th node in j-th panel -> first node doesn´t appear 
+psi2=[0, psi2(1:end-1)];
+    
+    
 % Coefficient matrix for gammas
 A=psi1+psi2;
 

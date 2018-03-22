@@ -14,19 +14,14 @@ s=0.5*transpose(eN-e1);
 
 
 
-if prf.IsSharp
-    xTE=[prf.panels.X(2,end) prf.panels.Y(2,end)]+0.00001*s;
-    
-    psi0=evaluateInviscFieldSol(xTE,fld,prf);
-else
-    %    calculate TE midpoint as first wake node
-    x1=[prf.panels.X(1,1) prf.panels.Y(1,1)]; 
-    xN=[prf.panels.X(1,end) prf.panels.Y(1,end)];
+%    calculate TE midpoint as first wake node
+x1=[prf.panels.X(1,1) prf.panels.Y(1,1)]; 
+xN=[prf.panels.X(1,end) prf.panels.Y(1,end)];
 
-    xTE= (x1+xN)/2 + 0.0001*s; % Midpoint of TE
-    psi0=fld.psi0;
-    %psi0=evaluateInviscFieldSol(xTE,fld,prf);
-end
+xTE= (x1+xN)/2 + 0.0001*s; % Midpoint of TE
+psi0=fld.psi0;
+%psi0=evaluateInviscFieldSol(xTE,fld,prf);
+
 
 % starting step size of wake equals the Panel length of first panel
 h=0.5*( prf.panels.L(1) + prf.panels.L(prf.N-1) );
@@ -128,23 +123,27 @@ wake.N=NW;
 
 
 % Trailing edge Gap
-
-AN=prf.ScrossT.*prf.panels.L(end);
-ZN=1-wake.s/(2.5*AN);
-xp1=prf.nodes.X(2)-prf.nodes.X(1);
-xpN=prf.nodes.X(end)-prf.nodes.X(end-1);
-yp1=prf.nodes.Y(2)-prf.nodes.Y(1);
-ypN=prf.nodes.Y(end)-prf.nodes.Y(end-1);
-Cross= (xp1*ypN-yp1*xpN)/sqrt( (xp1^2+yp1^2)*(xpN^2+ypN^2) );
-D=Cross/sqrt(1-Cross^2);
-D=max(D,-3/2.5);
-D=min(D, 3/2.5);
-A= 3+2.5*D;
-B=-2-2.5*D;
-wg=zeros(size(wake.s));
-wg(ZN>0)= AN* (A+B*ZN(ZN>0)).*ZN(ZN>0).^2;
-wake.gap=wg';
-
+if prf.IsSharp
+    wake.gap=zeros(size(wake.x));
+else
+    % Calculate the dead air region behind the blunt trailing edge for downstream wakepoints
+    AN=prf.ScrossT.*prf.panels.L(end);
+    ZN=1-wake.s/(2.5*AN);
+    xp1=prf.nodes.X(2)-prf.nodes.X(1);
+    xpN=prf.nodes.X(end)-prf.nodes.X(end-1);
+    yp1=prf.nodes.Y(2)-prf.nodes.Y(1);
+    ypN=prf.nodes.Y(end)-prf.nodes.Y(end-1);
+    Cross= (xp1*ypN-yp1*xpN)/sqrt( (xp1^2+yp1^2)*(xpN^2+ypN^2) );
+    D=Cross/sqrt(1-Cross^2);
+    D=max(D,-3/2.5);
+    D=min(D, 3/2.5);
+    A= 3+2.5*D;
+    B=-2-2.5*D;
+    wg=zeros(size(wake.x));
+    % only if wg>0 there is a dead air at current node, otherwise the approximation gives negative values
+    wg(ZN>0)= AN* (A+B*ZN(ZN>0)).*ZN(ZN>0).^2;
+    wake.gap=wg;
+end
 
 % % starting y-step size
 % dy1=0.2*( prf.nodes.Y(2)-prf.nodes.Y(end-1) );

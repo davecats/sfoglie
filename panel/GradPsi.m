@@ -103,6 +103,11 @@ p2_eta=[zeros(N,1), dps2_deta(:,1:end-1)];
 dpsi_dxi = p1_xi + p2_xi;
 dpsi_deta= p1_eta + p2_eta;
 
+if prf.IsSharp
+    dGTE_dxi=0;
+    dGTE_deta=0;
+end
+
 TE_xi=  prf.SdotT*dGTE_dxi + prf.ScrossT*dQTE_dxi;
 TE_eta=  prf.SdotT*dGTE_deta + prf.ScrossT*dQTE_deta;
 
