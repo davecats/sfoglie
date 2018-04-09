@@ -14,6 +14,9 @@ if mod==1 || mod==2 %  models from Drela 1987/89
     e1(e1<-20)=-20;
     e2=-1.74 - 0.31*H;
 
+    %tst= sin(0.0048*Ret).*max(370-Ret,0)./(370-Ret) + (sin(0.0048*370)*(exp(-0.016.*(Ret-370)))).*max(Ret-370,0)./(Ret-370);
+    
+    
     logRet= log(Ret); 
     logRet(logRet<3)=3;
 
@@ -21,7 +24,7 @@ if mod==1 || mod==2 %  models from Drela 1987/89
     TH=tanh(4 - H/0.875);
     T2=0.00011*(TH-1);
 
-    Cf2= T1 + T2;
+    Cf2= T1 + T2 ;%+ 0.0016*tst;
     dCf2_dH   = ( -1.33 -0.31*log(logRet/2.3025851) ) .*T1 ...
                 -0.00011*(1-TH.^2)/0.875;
 

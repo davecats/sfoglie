@@ -130,6 +130,8 @@ if getDerivates
     ddn_dH=[ddn_dH1,ddn_dH2];
     ddn_dRet=[ddn_dRet1,ddn_dRet2];
 
+    
+    
 %     dEXN_dA=zeros(dim);
 %     dEXN_dA(ind3)=10*EXN(ind3);
 % 

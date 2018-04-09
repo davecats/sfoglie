@@ -57,9 +57,10 @@ if ~IsForced
         dUT_dn2= U(1)*dw1_dn2 + U(2)*dw2_dn2;
         dsT_dn2= s1  *dw1_dn2 + s2  *dw2_dn2 ;
 
-        HT=DT/TT;
+        HT=max(1.05,DT/TT);
         RetT= UT*TT/nu;
-
+        
+        
         dHT_dD=1/TT;
         dHT_dT=-HT/TT;
 

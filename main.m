@@ -1,3 +1,5 @@
+% Script for airfoil calculation with plots and a comparison blowing/ no blowing 
+
 close all
 clear all
 %format long eng

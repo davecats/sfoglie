@@ -31,6 +31,9 @@ ts=10*ones(size(sol.c));
 ind=(1: sol.iTran(1)); ts(ind)=sol.c(ind);
 ind=(sol.iTran(2):length(sol.c));ts(ind)=sol.c(ind);
 DC=dc./ts;
+% DC=zeros(size(sol.c)); 
+% ind=(1: sol.iTran(1)); DC(ind)=dc(ind)./sol.c(ind);
+% ind=(sol.iTran(2):length(sol.c)); DC(ind)=dc(ind)./sol.c(ind);
 
 DT=dT./sol.T;
 DD=dDI./sol.D;
@@ -50,13 +53,6 @@ Rel=GetRelaxationFactor(DT, Rel);
 Rel=GetRelaxationFactor(DD, Rel);
 Rel=GetRelaxationFactor(DU, Rel);
 
-%Rel=max(Rel,0.005);
-
-
-
-% if k<10 && nkrit<8
-%    Rel=min(0.02,Rel); 
-% end
 
 solnew.T=sol.T + Rel*dT;
 solnew.D=sol.D + Rel*dDI;

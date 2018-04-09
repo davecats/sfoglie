@@ -32,6 +32,7 @@ k=0; res=1;
  while res>sol.resmax && k<sol.itmax
      
     D(2)=D2; T(2)=T2; U(2)=U2; 
+    
     if tr % Tripping
         [f, der, sT]=TransitionEQ( n, T, D,U,Vb,s1,h, C2, sol.sT(sec),true );
     else
@@ -44,7 +45,9 @@ k=0; res=1;
 
     rhs=[-f; 1];
     d=J\rhs;
-                
+      
+
+    
     if k<16 % sensitivity to change of H
         senTMP= 1000 * d(4)* Href/Uref;
         if k<6; sen=senTMP; else sen= 0.5*(sen+senTMP); end
@@ -68,7 +71,7 @@ k=0; res=1;
     C2=min(C2,0.3);
     C2=max(C2,0.0000001);
     
-    H2= D2/T2; 
+    H2= D2/T2;
     
     
     k=k+1;      

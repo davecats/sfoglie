@@ -40,28 +40,29 @@ ind=(prf.Nle-1 :-1: sol.iTran(1)+1); % laminar node indizes starting from LE
 indM=ind(2:end); % panel indizes
 s1=prf.sU(ind(1:end-1))';
 
-[ f1l,f2l,der] =JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1);
+
+if length(ind)>1 
+    [ f1l,f2l,der] =JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1);
 
 
-f1(indM)=f1l;
-f2(indM)=f2l;
-df1_dT(indM,:)=der.df1_dT;
-df1_dD(indM,:)=der.df1_dD;
-df1_dU(indM,:)=der.df1_dU;
-df1_ds(indM,:)=der.df1_ds;
-df2_dT(indM,:)=der.df2_dT;
-df2_dD(indM,:)=der.df2_dD;
-df2_dU(indM,:)=der.df2_dU;
-df2_ds(indM,:)=der.df2_ds;
+    f1(indM)=f1l;
+    f2(indM)=f2l;
+    df1_dT(indM,:)=der.df1_dT;
+    df1_dD(indM,:)=der.df1_dD;
+    df1_dU(indM,:)=der.df1_dU;
+    df1_ds(indM,:)=der.df1_ds;
+    df2_dT(indM,:)=der.df2_dT;
+    df2_dD(indM,:)=der.df2_dD;
+    df2_dU(indM,:)=der.df2_dU;
+    df2_ds(indM,:)=der.df2_ds;
 
 
-% Amplification Equation
-n=sol.c(ind); 
+    % Amplification Equation
+    n=sol.c(ind); 
 
- [ f3(indM),df3_dC(indM,:), df3_dT(indM,:),df3_dD(indM,:),df3_dU(indM,:),df3_ds(indM,:) ] =...
-            AmplificationEquation(n,sol.T(ind),sol.U(ind),sol.HK(ind),sol.Ret(ind),h(indM)  );
-
-
+     [ f3(indM),df3_dC(indM,:), df3_dT(indM,:),df3_dD(indM,:),df3_dU(indM,:),df3_ds(indM,:) ] =...
+                AmplificationEquation(n,sol.T(ind),sol.U(ind),sol.HK(ind),sol.Ret(ind),h(indM)  );
+end
 
 % pressure side
 %------------------------------------------------------------
@@ -70,23 +71,25 @@ ind=(prf.Nle: sol.iTran(2)-1);
 indM=ind(1:end-1);
 s1=prf.sL(indM-prf.Nle+1)';
 
-[ f1l,f2l,der] = JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1);
+if length(ind)>1 
+    [ f1l,f2l,der] = JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1);
 
-f1(indM)=f1l;
-f2(indM)=f2l;
-df1_dT(indM,:)=der.df1_dT;
-df1_dD(indM,:)=der.df1_dD;
-df1_dU(indM,:)=der.df1_dU;
-df1_ds(indM,:)=der.df1_ds;
-df2_dT(indM,:)=der.df2_dT;
-df2_dD(indM,:)=der.df2_dD;
-df2_dU(indM,:)=der.df2_dU;
-df2_ds(indM,:)=der.df2_ds;
+    f1(indM)=f1l;
+    f2(indM)=f2l;
+    df1_dT(indM,:)=der.df1_dT;
+    df1_dD(indM,:)=der.df1_dD;
+    df1_dU(indM,:)=der.df1_dU;
+    df1_ds(indM,:)=der.df1_ds;
+    df2_dT(indM,:)=der.df2_dT;
+    df2_dD(indM,:)=der.df2_dD;
+    df2_dU(indM,:)=der.df2_dU;
+    df2_ds(indM,:)=der.df2_ds;
 
-% Amplification Equation
-n=sol.c(ind); 
- [ f3(indM),df3_dC(indM,:), df3_dT(indM,:),df3_dD(indM,:),df3_dU(indM,:),df3_ds(indM,:) ] =...
-            AmplificationEquation(n,sol.T(ind),sol.U(ind),sol.HK(ind),sol.Ret(ind),h(indM)  );
+    % Amplification Equation
+    n=sol.c(ind); 
+     [ f3(indM),df3_dC(indM,:), df3_dT(indM,:),df3_dD(indM,:),df3_dU(indM,:),df3_ds(indM,:) ] =...
+                AmplificationEquation(n,sol.T(ind),sol.U(ind),sol.HK(ind),sol.Ret(ind),h(indM)  );
+end
 
 %                               turbulent part of Boundary
 %------------------------------------------------------------------------------------------------------------------------
@@ -355,6 +358,38 @@ EQ1= 3*EQsys - 2*ones(size(EQ));
 EQ2= 3*EQsys - ones(size(EQ));
 EQ3= 3*EQsys ;
 
+% Model for correction of the pressure Term   
+%------------------------------------------------------------------------------------------
+try
+    pressureCor=evalin('base','pressureCor');
+catch
+    pressureCor=false;
+end
+ Blow=find(sol.Vb~=0);
+ if ~isempty(Blow) && pressureCor
+     BlowU= Blow(Blow<prf.Nle-1);
+     BlowL= Blow(Blow>prf.Nle);
+     
+     if ~isempty(BlowU)
+        sU_b=prf.sU(BlowU);
+        PrU = PressureCorrect(sU_b(end),sU_b(1),prf.sU(end:-1:1)',sol.Vb(prf.Nle-1:-1:1),sol.U(prf.Nle-1:-1:1));
+        PrU=PrU(end:-1:1);
+        Upper= PrU./sol.T(1:prf.Nle-1);
+        Upper= 0.5*(Upper(2:end)+Upper(1:end-1)).*prf.panels.L(1:prf.Nle-2)';
+        
+        f1(1:prf.Nle-2)=f1(1:prf.Nle-2) + Upper;
+     end
+     if ~isempty(BlowL)
+        sL_b=prf.sL(BlowL-prf.Nle+1);
+        PrL = PressureCorrect(sL_b(1),sL_b(end),prf.sL',sol.Vb(prf.Nle:prf.N),sol.U(prf.Nle:prf.N));
+        Lower=PrL./sol.T(prf.Nle:prf.N);
+        Lower= 0.5*(Lower(2:end)+Lower(1:end-1)).*prf.panels.L(prf.Nle:prf.N-1)';
+    
+        f1(prf.Nle:prf.N-1)=f1(prf.Nle:prf.N-1) + Lower;
+     end
+ end
+%------------------------------------------------------------------------------------------
+
 f=zeros(3*Nges,1);
 f(EQ1)=f1(EQ); f(EQ2)=f2(EQ); f(EQ3)=f3(EQ);
 
@@ -396,6 +431,8 @@ add(EQ3)=   df3_dU(EQ,1).*deltaU1 + df3_dU(EQ,2).*deltaU2 ...
           + df3_dD(EQ,1).*DDS1    + df3_dD(EQ,2).*DDS2 ...
           + (df3_ds(EQ,1) + df3_ds(EQ,2) ).*stagn(EQ) ;
 
+     
+       
 %--------------------------------------------------------------------------
 
 % Equations to close System
