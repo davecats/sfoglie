@@ -157,34 +157,38 @@ end
 
 % Integral values
 
-% lift coefficient
-h=( prf.panels.X(2,:)-prf.panels.X(1,:) )*cos(prf.alfa) + ( prf.panels.Y(2,:)-prf.panels.Y(1,:) )*sin(prf.alfa);
-h=h';
+[solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N),solnew.tau(1:prf.N),prf.s,prf.panels.e',prf.panels.n',prf.alfa,...
+    true,solnew.Vb/prf.Uinfty);
 
-Cpp=[solnew.Cp(1:prf.N);solnew.Cp(1)];
-solnew.CL   = 0.5*sum( h.*( Cpp(2:end) + Cpp(1:end-1) ) );% midpoint rule
 
-    % shear forces of each panel in x and y direction 
-tauX= abs(solnew.tau(1:prf.N).*prf.panels.e(1,:)');
-tauY= abs(solnew.tau(1:prf.N).*prf.panels.e(2,:)');
-
-tauXU= [0;tauX(prf.Nle-1:-1:1)];
-tauYU= [0;tauY(prf.Nle-1:-1:1)];
-tauXL= [0;tauX(prf.Nle:prf.N)];
-tauYL= [0;tauY(prf.Nle:prf.N)];
-sU=[0,prf.sU(end:-1:1)];
-sL=[0,prf.sL];
-
-% integrate x-component -> simpson law
-FX=NumInt(tauXU,sU) + NumInt(tauXL,sL);
-FY=NumInt(tauYU,sU) + NumInt(tauYL,sL);
-
-% viscous Drag Coefficient
-solnew.Cnu=2*( FX*cos(prf.alfa) + FY*sin(prf.alfa) );
-
-% Drag coefficient 
-solnew.Cdrag=DragCoeff(solnew.T(end),solnew.HK(end),solnew.U(end)/prf.Uinfty, 1 );
-
+%old
+% % lift coefficient
+% h=( prf.panels.X(2,:)-prf.panels.X(1,:) )*cos(prf.alfa) + ( prf.panels.Y(2,:)-prf.panels.Y(1,:) )*sin(prf.alfa);
+% h=h';
+% 
+% Cpp=[solnew.Cp(1:prf.N);solnew.Cp(1)];
+% solnew.CL   = 0.5*sum( h.*( Cpp(2:end) + Cpp(1:end-1) ) );% midpoint rule
+% 
+%     % shear forces of each panel in x and y direction 
+% tauX= abs(solnew.tau(1:prf.N).*prf.panels.e(1,:)');
+% tauY= abs(solnew.tau(1:prf.N).*prf.panels.e(2,:)');
+% 
+% tauXU= [0;tauX(prf.Nle-1:-1:1)];
+% tauYU= [0;tauY(prf.Nle-1:-1:1)];
+% tauXL= [0;tauX(prf.Nle:prf.N)];
+% tauYL= [0;tauY(prf.Nle:prf.N)];
+% sU=[0,prf.sU(end:-1:1)];
+% sL=[0,prf.sL];
+% 
+% % integrate x-component -> simpson law
+% FX=NumInt(tauXU,sU) + NumInt(tauXL,sL);
+% FY=NumInt(tauYU,sU) + NumInt(tauYL,sL);
+% 
+% % viscous Drag Coefficient
+% solnew.Cnu=2*( FX*cos(prf.alfa) + FY*sin(prf.alfa) );
+% 
+% % Drag coefficient 
+% solnew.Cdrag=DragCoeff(solnew.T(end),solnew.HK(end),solnew.U(end)/prf.Uinfty, 1 );
 
 
 % integral Cf
