@@ -2,11 +2,11 @@ function [solnew, prf] = NewtonEq( prf,wake,sol,D0,Uinv,it)
 %NEWTONEQ       sets up the global Newton equationsystem J dz=- f(z) and
 %               solves it iterativly
 %               sol:    initial solution struct
-%               D0:      Coefficients of mass Defekt -> U = Uinv + Dm
+%               D0:     Coefficients of mass Defekt -> U = Uinv + Dm
 %               it:     max number of iteration steps
 
-%nu=evalin('base','nu');
-%Re=evalin('base','Re');
+% nu=evalin('base','nu');
+% Re=evalin('base','Re');
 
 Nges=prf.N + wake.N;
 k=0;
@@ -21,8 +21,11 @@ prf.dsLE_dG2= prf.LE1/(Uinv(prf.Nle) + Uinv(prf.Nle-1));
 %NleStart=prf.Nle;
 GamStart= [Uinv(1:prf.Nle-1); -Uinv(prf.Nle:end)];
 
-while res>3e-4 && k<it 
-     % correct adjust sign for pressure/suction side
+%xtrr=zeros(it,2);
+
+while res>5e-4 && k<it 
+    
+     % adjust sign for pressure/suction side
      sgn=ones(size(D0));
      sgn(1:prf.Nle-1,1:prf.Nle-1)=-sgn(1:prf.Nle-1,1:prf.Nle-1);
      sgn(prf.Nle:end,prf.Nle:end)=-sgn(prf.Nle:end,prf.Nle:end);
@@ -31,9 +34,11 @@ while res>3e-4 && k<it
     
      if k>0;
         sol=solnew;
-        % refresh -> search new transition point etc
+        % refresh -> search new transition point and runs inverse mode for seperation
         sol = Refresh( prf,wake, sol );
      end
+     %xtrr(k+1,:)=sol.tran.x';
+     
      Un=Uinv + D*sol.m; % velocity solution with new source Terms
 
     [J,rhs]=JacobiM(prf,wake,sol, Un,D);
@@ -64,7 +69,7 @@ while res>3e-4 && k<it
     prf.dsLE_dG2= prf.LE1/(solnew.U(prf.Nle) + solnew.U(prf.Nle-1) );
     
     NleDif=prf.Nle-NleOld; 
-    % set new startinpoint variables
+    % set new starting point variables
     if NleDif>0 %-> moves more on pressure side
         solnew.T(NleOld:prf.Nle-1)=solnew.T(prf.Nle);
         solnew.D(NleOld:prf.Nle-1)=solnew.D(prf.Nle);
@@ -85,7 +90,7 @@ while res>3e-4 && k<it
         % adjust inviscid velocity
         Uinv=sign(gam).*GamStart;
     end
-    % make shure the velocitie does not get zero
+    % make shure the velocity does not get zero
     solnew.U(solnew.U<1e-7)=1e-7;
     solnew.m=solnew.D.*solnew.U;    
     
@@ -95,7 +100,21 @@ end
 
 %solnew = Refresh( prf,wake, solnew );
 
+solnew.residual=res;
+
+
+% figure
+% hold on
+% plot(1:it,xtrr(:,1),'b .')
+% plot(1:it,xtrr(:,2),'r x')
+% xlabel('iter')
+% ylabel('x_tran')
+% legend('suction','pressure')
+
+
 % final values
+% calculate values of end solution (Cf, CD, CL ...)
+
 indL=(solnew.iTran(1)+1:solnew.iTran(2)-1); % laminar node indizes
 indT=[1:solnew.iTran(1) , solnew.iTran(2):prf.N]; % wake node indizes
 indW=prf.N+1:prf.N+wake.N; % turbulent node indizes
@@ -131,65 +150,37 @@ end
 
 
 
-Xt=prf.nodes.X(solnew.iTran);
 
-tmp= solnew.iTran +[1,-1];
-Xl=prf.nodes.X(tmp);
-
-wl= solnew.tran.Lturb./(solnew.tran.Llam + sol.tran.Lturb)  ;
-wt= solnew.tran.Llam./(solnew.tran.Llam + sol.tran.Lturb)  ;
-
-xTran= wl.*Xl + wt.*Xt;
 
 % Write out
-if ~solnew.Tripping(1); 
-    solnew.xT(1)=xTran(1); 
-    disp(['suction side: transition at x/c=',num2str(xTran(1))]);
-else
+disp(' ')
+if solnew.Tripping(1); 
     disp(['suction side: forced transition at x/c=',num2str(solnew.xT(1))]);
-end
-if ~solnew.Tripping(2); 
-    solnew.xT(2)=xTran(2); 
-    disp(['pressure side: transition at x/c=',num2str(xTran(2))]);
 else
-    disp(['pressure side: forced transition at x/c=',num2str(solnew.xT(2))]);
-end  
+    disp(['suction side: free transition at x/c=',num2str(solnew.tran.x(1))]);
+end
+if solnew.Tripping(2); 
+    disp(['suction side: forced transition at x/c=',num2str(solnew.xT(2))]);
+else
+    disp(['suction side: free transition at x/c=',num2str(solnew.tran.x(2))]);
+end
+disp(' ')
 
 % Integral values
 
-[solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N),solnew.tau(1:prf.N),prf.s,prf.panels.e',prf.panels.n',prf.alfa,...
-    true,solnew.Vb/prf.Uinfty);
+ if prf.IsSharp
+    [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N),solnew.tau(1:prf.N),prf.s,prf.nodes.e',prf.nodes.n',...
+                                                    prf.alfa, true,solnew.Vb/prf.Uinfty);
+ else
+    %include TE Panel contribution
+    [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N+1),solnew.tau(1:prf.N+1),[prf.s,prf.s(end)+prf.panels.L(end)],...
+                                                [prf.nodes.e,prf.panels.e(:,end)]',[prf.nodes.n,prf.panels.n(:,end)]',...
+                                                prf.alfa, true,solnew.Vb/prf.Uinfty);
+ end
 
-
-%old
-% % lift coefficient
-% h=( prf.panels.X(2,:)-prf.panels.X(1,:) )*cos(prf.alfa) + ( prf.panels.Y(2,:)-prf.panels.Y(1,:) )*sin(prf.alfa);
-% h=h';
-% 
-% Cpp=[solnew.Cp(1:prf.N);solnew.Cp(1)];
-% solnew.CL   = 0.5*sum( h.*( Cpp(2:end) + Cpp(1:end-1) ) );% midpoint rule
-% 
-%     % shear forces of each panel in x and y direction 
-% tauX= abs(solnew.tau(1:prf.N).*prf.panels.e(1,:)');
-% tauY= abs(solnew.tau(1:prf.N).*prf.panels.e(2,:)');
-% 
-% tauXU= [0;tauX(prf.Nle-1:-1:1)];
-% tauYU= [0;tauY(prf.Nle-1:-1:1)];
-% tauXL= [0;tauX(prf.Nle:prf.N)];
-% tauYL= [0;tauY(prf.Nle:prf.N)];
-% sU=[0,prf.sU(end:-1:1)];
-% sL=[0,prf.sL];
-% 
-% % integrate x-component -> simpson law
-% FX=NumInt(tauXU,sU) + NumInt(tauXL,sL);
-% FY=NumInt(tauYU,sU) + NumInt(tauYL,sL);
-% 
-% % viscous Drag Coefficient
-% solnew.Cnu=2*( FX*cos(prf.alfa) + FY*sin(prf.alfa) );
-% 
-% % Drag coefficient 
-% solnew.Cdrag=DragCoeff(solnew.T(end),solnew.HK(end),solnew.U(end)/prf.Uinfty, 1 );
-
+if prf.N<80 % numeric integration for drag gets to inaccurate -> use Squire-Young formula
+    solnew.Cdrag=DragCoeff(solnew.T(end),solnew.HK(end),solnew.U(end)/prf.Uinfty, 1 );
+end
 
 % integral Cf
 indU=prf.Nle-1:-1:1;

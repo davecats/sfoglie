@@ -10,6 +10,7 @@ catch
 end
 
 nu=evalin('base','nu');
+
 Lges=[prf.panels.L, wake.L]; 
 
 % initial node values
@@ -72,18 +73,22 @@ for section=1:3
         D2=sol.D(ind(2));
         C2=0.03;
         
-        %reference values
+        % values of direct mode as reference values
         Uref=U2;
         Href=H2;
         
-        if j>= TranOld 
-            C2=sol.c(i+step);
+        if j>= TranOld % former turbulent node is now laminar
+            C2=sol.c(i+step); 
             if C2<0; C2=0.03; end  
             if lam
-                Href=( sol.D(i)-gap(i) )/sol.T(i);% former turbulent node is now laminar
+                Href=( sol.D(i)-gap(i) )/sol.T(i); % Take value of previous node as reference
             end  
         elseif j>=Tran && j<TranOld % former laminar node is now turbulent
-            C2=sol.c(i);
+            if j==Tran
+                C2=0.03;%InitialCtau(D2,T2,U2,nu);
+            else
+                C2=sol.c(i); % Take value of previous node as reference -> already known
+            end
             if C2<0; C2=0.03; end
 
         end
@@ -101,14 +106,19 @@ for section=1:3
             if lam     
                 [ f1,f2,df_dT,df_dD,df_dU ] = SingleJacobiLam(T,U, sol.Vb(ind),H,Ret,Lges(i-shift),sBL(i),true); 
                 
+                % calculate changes in U for the bigger shape parameter H + 1 where the equation is still fullfilled
                 J=[df_dT, df_dD, df_dU; -H2./T2, 1./T2 ,0];
                 rhs=[-f1;-f2;1];
                 
                 d=J\rhs;
-                if k<16 % sensitivity to change of H
+                if k<16 % sensitivity of U to the change of H
+                    % constant factor determines the allowed changes in H
+                    %   -> bigger values lead to bigger allowed deviation of H
                     senTMP= 1000 * d(3)* Href/Uref;
                     if k<6; sen=senTMP; else sen= 0.5*(sen+senTMP); end
                 end
+                
+                % calculate variables for the forced change in H
                 J(3,1)=J(3,1)*Href;
                 J(3,2)=J(3,2)*Href; 
                 J(3,3)=sen/Uref;
@@ -212,6 +222,9 @@ for section=1:3
              % tripping arc length in current intervall
             if sol.Tripping(section) && prf.nodes.X(i+step)>sol.xT(section);
                 tr=true;
+                w1= (prf.nodes.X(i+step)-sol.xT(section))/ (prf.nodes.X(i+step)-prf.nodes.X(i));
+                w2=1-w1;
+                sol.sT(section)= w1*sBL(i) + w2*sBL(i+step);
             end
 
 
@@ -222,16 +235,17 @@ for section=1:3
                 
                 lam=false;  
                 % solve the Equations for Transition panel 
-                [ Llam,T2,D2,U2,C1,~ ] = RefreshTransition(section, sol,sol.c(ind), sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),sBL(i),Lges(i-shift),C2 );
-                
+                [ tran,T2,D2,U2,C1,~ ] = RefreshTransition(section, sol,sol.c(ind), sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),sBL(i),Lges(i-shift),C2 );
                 %----------
                 % write transition node values
                 sol.iTran(section)=i+step;
-                sol.tran.s(section)=prf.s(i)-Llam;
+                sol.tran.s(section)=prf.s(i)-tran.Llam;
                 sol.tran.n2(section)=sol.c(i+step);
-                sol.tran.Llam(section)=Llam;
-                sol.tran.Lturb(section)=Lges(i-shift)-Llam;
-                
+                sol.tran.Llam(section)=tran.Llam;
+                sol.tran.Lturb(section)=tran.Lturb;
+                sol.tran.wl(section)=tran.wl;
+                sol.tran.wt(section)=tran.wt;
+                sol.tran.x(section)=tran.wl*prf.nodes.X(i)+tran.wt*prf.nodes.X(i+step);
                 
                 % store Ctau instead of n 
                 C2=C1;

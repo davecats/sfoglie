@@ -171,7 +171,7 @@ xtt= [XUw(end:-1:1),XT,XLw];
 ytt= [YTw(end:-1:1),YT,YTw2];
 
 tmp=round(prf.alfa*180/pi);
-str={['\alpha=',num2str(tmp),' degree'],['Re=',num2str(Re)],['C_L=',num2str(sol.CL)],['C_d=',num2str(sol.Cdrag)],['C_\nu=',num2str(sol.Cnu)],['C_d/C_L=',num2str(sol.Cdrag/sol.CL)] };
+str={['\alpha=',num2str(tmp),' degree'],['Re=',num2str(Re)],['C_L=',num2str(sol.CL)],['C_d=',num2str(sol.Cdrag)],['C_\nu=',num2str(sol.Cnu)],['C_L/C_d=',num2str(sol.CL/sol.Cdrag)] };
 
 figure; 
 hold on; box on;

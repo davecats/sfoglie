@@ -42,6 +42,9 @@ if p.IsSharp
     p.ScrossT=1;
     p.nodes.n=(n(:,1:end-2)+n(:,2:end-1))/2;
     p.nodes.n=[n(:,1),p.nodes.n, n(:,end)];
+    
+    p.nodes.e=(e(:,1:end-2)+e(:,2:end-1))/2;
+    p.nodes.e=[e(:,1),p.nodes.e, e(:,end)];
     % dummy TE
     p.panels.theta(end)=pi;
     e(:,end)=[0;1];
@@ -60,6 +63,8 @@ else
     p.nodes.n=(n(:,1:end-2)+n(:,2:end-1))/2;
     p.nodes.n=[n(:,1),p.nodes.n, n(:,end-1)];
     
+    p.nodes.e=(e(:,1:end-2)+e(:,2:end-1))/2;
+    p.nodes.e=[e(:,1),p.nodes.e, e(:,end-1)];
     % TE Gap
     p.gap=p.ScrossT*L(end);
 end

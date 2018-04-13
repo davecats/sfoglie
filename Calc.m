@@ -1,7 +1,7 @@
-% does the calculation for a single case without plots etc -> run in parameters.m script !
+ % does the calculation for a single case without plots etc -> run in parameters.m script !
 
 
-close all
+%close all
  
 addpath('./panel/')
 addpath('./Amplification/')
@@ -66,9 +66,9 @@ vi = profile.Uinfty*sin(profile.alfa);
 profile = naca4(profile,NACA,NoSkew,sharpTE);
  clear NACA NoSkew sharpTE
 
-% data=load('e387.txt');
-% profile.nodes.X=transpose(data(:,1));profile.nodes.Y=transpose(data(:,2));
-% profile.N=length(data(:,1)); clear data
+%   data=load('e387.txt');
+%   profile.nodes.X=transpose(data(:,1));profile.nodes.Y=transpose(data(:,2));
+%   profile.N=length(data(:,1)); clear data
  
 
 
@@ -184,10 +184,35 @@ ini = GetInitialSolution( profile,wake, Uinv,Vb,Re, 2, trip, xtrip  );
 [sol, prfE]=NewtonEq( profile,wake,ini,D,Uinv,it);
 
 
+% If no convergence -> try with different approach for Transition panel EQ
+if sol.residual>5e-4
+    TranEQ2=true;
+    disp('Not converged, Try different Transition approach ')
+    disp('------------------------------------------------ ')
+    if sol.residual<1
+        [solTST, prfTST]=NewtonEq( prfE,wake,sol,D,Uinv,it);
+    else
+        [solTST, prfTST]=NewtonEq( profile,wake,ini,D,Uinv,it);
+    end
+    
+    if solTST.residual < sol.residual
+       sol=solTST; prfE=prfTST;
+    end
+    clear solTST  prfTST TranEQ2
+end
 
-
-
-
+% 
+% figure
+% hold on
+% plot(prfE.nodes.X,sol.Cp(1:prfE.N))
+% plot(prfE.nodes.X,solTST.Cp(1:prfE.N))
+% legend('EQ1','EQ2')
+% 
+% figure
+% hold on
+% plot(sges,sol.tau)
+% plot(sges,solTST.tau)
+% legend('EQ1','EQ2')
 
 
 

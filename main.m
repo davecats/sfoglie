@@ -1,7 +1,8 @@
-% Script for airfoil calculation with plots and a comparison blowing/ no blowing 
+ % Script for airfoil calculation with plots and a comparison blowing/ no blowing 
+
 
 close all
-clear all
+ clear all
 %format long eng
 
 addpath('./panel/')
@@ -18,31 +19,32 @@ set(groot, 'defaultAxesTickLabelInterpreter','LaTex'); set(groot, 'defaultLegend
 %------------------------------------------------------------------------------
 
 % ------ Profile ---------
-NACA = [4 4 1 2]; % naca profil
-NoSkew  =false;         % if true profile skewness neclected
+NACA = [4 4 1 2]; 
+NoSkew  =false;%         % if true profile skewness neclected
 sharpTE =false;         % Sharp or blunt trailing edge
 profile.c = 1;          % chord length -> scales the profile  
 profile.M = 90;        % number of x-values, where nodes will be -> 2*M-1 nodes in total
+it=20; % maximum number of iterations
 
 % Angle of attack
-profile.alfa = 5*pi/180;
+profile.alfa = 0*pi/180;
 Invisc = false;% true; %    % only inviscid solution or with Boundary Layer
  
 
 profile.Uinfty=1;       % velocity of outer flow
-Re= 4e5;  % 6.536*10^4; % Chord Reynoldsnumber
-nkrit=  9;%             % critical amplification exponent for transition to take place
+Re= 4e5;                % Chord Reynoldsnumber
+nkrit=  0.15;%             % critical amplification exponent for transition to take place
 
 
 % --------- tripping ----------------
-% trip=[ false;...       % tripping on suction side 
-%        false];         % tripping on pressure side 
- trip=[ true;... % tripping on suction side      
-        true];   % tripping on pressure side  
+ trip=[ false;...       % tripping on suction side 
+        false];         % tripping on pressure side 
+% trip=[ true;... % tripping on suction side      
+%        true];   % tripping on pressure side  
 
 %tripping location
-xtrip=[ 0.14;...
-        0.08 ]*profile.c;
+xtrip=[ 0.07;...
+        0.19 ]*profile.c;
 
 
 % ----------- blowing -----------------------
@@ -60,7 +62,7 @@ xBend  = [0.5;...
 intensity=[0.001;...
            0.001]* profile.Uinfty;
 
-
+pressureCor=false;%true; % include correction Term for pressure
 
 %--------------------------------------------------
 %cinematic viscosity
@@ -76,7 +78,7 @@ profile = naca4(profile,NACA,NoSkew,sharpTE);
  clear NACA NoSkew sharpTE
 
 % % import profile Nodes
-% data=load('Nodes.txt');
+% data=load('e387.txt');
 % profile.nodes.X=transpose(data(:,1));profile.nodes.Y=transpose(data(:,2));
 % profile.N=length(data(:,1)); clear data
 
@@ -145,11 +147,10 @@ wake=GetWakeStreamline(field,profile,NW);
 
 % Plot profile and wake
 if Invisc
-   figure(); 
+   figure; 
    hold on; box on;
    plot([profile.panels.X]',[profile.panels.Y]','k','Linewidth',2);
    plot(wake.x,wake.y,'b');
-   %plot(LEstr.x,LEstr.y,'b');
    axis equal; xlabel('x'); ylabel('y') 
    return;
 end
@@ -237,10 +238,26 @@ ini = GetInitialSolution( profile,wake, Uinv,Vb,Re, 2, trip, xtrip );
 %PlotStuff(profile,wake,ini, 'U');
 
 
-it=16; % maximum number of iterations
 
 %  coupled boundary layer and potential flow solution
 [sol, prfE]=NewtonEq( profile,wake,ini,D,Uinv,it);
+% If no convergence -> try with different approach for Transition panel EQ
+if sol.residual>5e-4
+    TranEQ2=true;
+    disp('Not converged, Try different Transition approach ')
+    disp('------------------------------------------------ ')
+    if sol.residual<1
+        [solTST, prfTST]=NewtonEq( prfE,wake,sol,D,Uinv,it);
+    else
+        [solTST, prfTST]=NewtonEq( profile,wake,ini,D,Uinv,it);
+    end
+    
+    if solTST.residual < sol.residual
+       sol=solTST; prfE=prfTST;
+    end
+    clear solTST  prfTST TranEQ2
+end
+%--------------------------------------------------------------
 
 
 % plot
@@ -257,10 +274,19 @@ it=16; % maximum number of iterations
 
 %%
 
+% tmp=[round(profile.alfa*180/pi), sol.CL, sol.Cdrag, sol.Cnu];
+% filen='./GLval.txt';
+% dlmwrite(filen, tmp,'-append')
+
+
+
 %   with blowing
 %----------------------------------------------
 
 if ~withBlowing(1) && ~withBlowing(2); return; end
+
+disp('With Blowing')
+disp('-----------------------')
 
 Vb=zeros(size(Uinv));
 
@@ -282,6 +308,23 @@ iniB = GetInitialSolution( profile,wake, Uinv,Vb,Re, 2, trip, xtrip  );
 
 %  coupled boundary layer and potential flow solution
 [solB, prfB]=NewtonEq( profile,wake,iniB,D,Uinv,it);
+% If no convergence -> try with different approach for Transition panel EQ
+if solB.residual>5e-4
+    TranEQ2=true;
+    disp('Not converged, Try different Transition approach ')
+    disp('------------------------------------------------ ')
+    if solB.residual<1
+        [solTST, prfTST]=NewtonEq( prfB,wake,solB,D,Uinv,it);
+    else
+        [solTST, prfTST]=NewtonEq( profile,wake,iniB,D,Uinv,it);
+    end
+    
+    if solTST.residual < sol.residual
+       solB=solTST; prfB=prfTST;
+    end
+    clear solTST  prfTST TranEQ2
+end
+%--------------------------------------------------------------
 
 % indBs=(prfB.Nle-1:-1:1);            % suction side node indizes
 % indBp=(prfB.Nle :prfB.N);           % pressure side node indizes
@@ -390,9 +433,9 @@ figure
 hold on
 plot(sU, rU ,'g')
 plot(sU, RU ,'b')
-line([prfE.sU(indB1(1))   prfE.sU(indB1(1))]  , [0  max(rU)+0.03],'color','black');
-line([prfE.sU(indB1(end)) prfE.sU(indB1(end))], [0  max(rU)+0.03],'color','black');
-text(0.8,0.8*max(rU),str);
+line([prfE.sU(indB1(1))   prfE.sU(indB1(1))]  , [0  max(rU)+0.03],'color','black','black','LineStyle','--');
+line([prfE.sU(indB1(end)) prfE.sU(indB1(end))], [0  max(rU)+0.03],'color','black','black','LineStyle','--');
+text(0.8,0.7*max(rU),str);
 title('Drag-reduction coefficient')
 ylabel(' r ') 
 xlabel(' s ')
@@ -406,8 +449,8 @@ figure
 hold on
 plot(prfE.nodes.X(1:prfE.N), sol.Cp(1:prfE.N) ,'g')
 plot(prfE.nodes.X(1:prfE.N), solB.Cp(1:prfE.N) ,'b')
-line([prfE.nodes.X(indB1(1))   prfE.nodes.X(indB1(1))]  , [min(sol.Cp) max(sol.Cp)],'color','black');
-line([prfE.nodes.X(indB1(end)) prfE.nodes.X(indB1(end))], [min(sol.Cp) max(sol.Cp)],'color','black');
+line([prfE.nodes.X(indB1(1))   prfE.nodes.X(indB1(1))]  , [min(sol.Cp) max(sol.Cp)],'color','black','black','LineStyle','--');
+line([prfE.nodes.X(indB1(end)) prfE.nodes.X(indB1(end))], [min(sol.Cp) max(sol.Cp)],'color','black','black','LineStyle','--');
 title('Pressure coefficient')
 ylabel(' C_p ') 
 xlabel(' x ')
@@ -417,8 +460,8 @@ figure
 hold on
 plot(prfE.nodes.X(1:prfE.N), sol.tau(1:prfE.N) ,'g')
 plot(prfE.nodes.X(1:prfE.N), solB.tau(1:prfE.N) ,'b')
-line([prfE.nodes.X(indB1(1))   prfE.nodes.X(indB1(1))]  , [min(solB.tau) max(sol.tau)],'color','black');
-line([prfE.nodes.X(indB1(end)) prfE.nodes.X(indB1(end))], [min(solB.tau) max(sol.tau)],'color','black');
+line([prfE.nodes.X(indB1(1))   prfE.nodes.X(indB1(1))]  , [min(solB.tau) max(sol.tau)],'color','black','black','LineStyle','--');
+line([prfE.nodes.X(indB1(end)) prfE.nodes.X(indB1(end))], [min(solB.tau) max(sol.tau)],'color','black','black','LineStyle','--');
 title('wall shear stress')
 ylabel(' \tau_w ') 
 xlabel(' x ')
@@ -437,7 +480,30 @@ xlabel(' x ')
 legend('$\delta_1$ without blowing','$\delta_2$ without blowing','$\delta_1$ with blowing','$\delta_2$ with blowing','location','northeast'); 
 
 
+sol.q =sol.D.*sol.U;
+solB.q=solB.D.*solB.U;
+delta_q=solB.q-sol.q;
 
 
+figure 
+hold on
+plot(prfE.nodes.X(1:prfE.Nle-1), sol.q(1:prfE.Nle-1) ,'k')
+plot(prfE.nodes.X(1:prfE.Nle-1), solB.q(1:prfB.Nle-1),'b')
+plot(prfE.nodes.X(1:prfE.Nle-1), delta_q(1:prfB.Nle-1),'r ')
+line([prfE.nodes.X(indB1(1))   prfE.nodes.X(indB1(1))]  , [min(solB.tau) max(sol.tau)],'color','black','LineStyle','--');
+line([prfE.nodes.X(indB1(end)) prfE.nodes.X(indB1(end))], [min(solB.tau) max(sol.tau)],'color','black','LineStyle','--');
+title('source distribution suction side')
+ylabel(' q ') 
+xlabel(' x ')
+legend('q without blowing','q with blowing','$q_b-q$','location','northwest'); 
+ylim([0  max(solB.q(1:prfB.Nle-1))*1.05])
 
+
+figure 
+hold on
+plot(sges, sol.q ,'k')
+plot(sges, solB.q,'b')
+plot(sges, delta_q,'r --')
+ylim([0  max(solB.q)*1.05])
+legend('q without blowing','q with blowing','$q_b-q$','location','northwest'); 
 

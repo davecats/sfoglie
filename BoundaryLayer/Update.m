@@ -46,6 +46,13 @@ DU=dU/0.25;
 rms= DC(1:prf.N).^2 + DT(1:prf.N).^2 + DD(1:prf.N).^2 + DU(1:prf.N).^2;
 res= sqrt( sum(rms)/(4*prf.N) );
 
+% figure
+% hold on
+% plot(prf.s,DC(1:prf.N).^2)
+% plot(prf.s,DT(1:prf.N).^2)
+% plot(prf.s,DD(1:prf.N).^2)
+% plot(prf.s,DU(1:prf.N).^2)
+% legend('dc','DT','DD','DU')
 
 % adjust Relaxationfactor for big relative changes in D,C,T or U
 Rel=GetRelaxationFactor(DC, Rel);

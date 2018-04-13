@@ -9,8 +9,18 @@ catch
     nkrit=9;
 end
 nu=evalin('base','nu');
+try
+    TranEQ2=evalin('base','TranEQ2');
+catch
+    TranEQ2=false;
+end
 
 if nargin==8; IsForced=false;  end
+
+if TranEQ2 && ~IsForced
+   [ f, erg,sT ] = TransitionEQ2( n, T, D,U,Vb,s1,h, C2) ; return; 
+end
+
 
 H=D./T;
 Ret=T.*U/nu;
@@ -38,6 +48,8 @@ end
 
 
 if ~IsForced
+    %n2old=n(2);
+    
     % solves the Amplification Equation for current step forcing n(sT)= nkrit
     while abs(dnI)>5e-5 && k<30
         w2= (nkrit-n(1))/(n(2)-n(1));
@@ -59,7 +71,6 @@ if ~IsForced
 
         HT=max(1.05,DT/TT);
         RetT= UT*TT/nu;
-        
         
         dHT_dD=1/TT;
         dHT_dT=-HT/TT;
@@ -87,13 +98,17 @@ if ~IsForced
         if rel*abs(dnI)>1; rel=1/abs(dnI);end
 
         nT=n(2) + rel*dnI;
+        
+        
         if (n(2)>nkrit && nT<nkrit) || (n(2)<nkrit && nT>nkrit)
             nT=nkrit;
         end
 
         n(2)=nT;
+        
         k=k+1;
     end % -> end of iteration
+    
 end
 
 
@@ -110,7 +125,7 @@ if IsForced
     dsT_dU2 =0;
     dsT_ds2 =0;
 else
-    % derivates of the Transitionpoint quantities
+    % derivates of the Transition point quantities
     dsT_dn1= s1  * dw1_dn1 + s2  * dw2_dn1;
     dTT_dn1= T(1)* dw1_dn1 + T(2)* dw2_dn1;
     dDT_dn1= D(1)* dw1_dn1 + D(2)* dw2_dn1;

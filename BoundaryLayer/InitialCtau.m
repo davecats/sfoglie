@@ -1,4 +1,4 @@
-function [C,dC_dT,dC_dD,dC_dU]= InitialCtau( D,T,U,nu, getDer )
+function [C,dC_dT,dC_dD,dC_dU]= InitialCtau( D,T,U,nu_, getDer )
 %INITIALCTAU  returns the initial values for the maximum shear stress
 %             coefficient Ctau at the first turbulent node
 
@@ -8,9 +8,9 @@ H=D./T;
 dH_dT=-H./T;
 dH_dD=1./T;
 
-Ret=U.*T/nu;
-dRet_dT = U/nu;
-dRet_dU = T/nu;
+Ret=U.*T/nu_;
+dRet_dT = U/nu_;
+dRet_dU = T/nu_;
 
 % empirical factor 
 fac=1.8*exp(-3.3./(H-1));

@@ -8,7 +8,9 @@ if nargin==2
     verf='central';
 end
 
-if length(V(:,1))==1
+if length(V(:,1))==1 && length(x(:,1))==1
+    V=transpose(V);x=transpose(x);
+elseif length(V(:,1))==1
     V=transpose(V);
 elseif length(x(:,1))==1
     x=transpose(x);

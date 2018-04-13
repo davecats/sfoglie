@@ -1,7 +1,6 @@
-function [ Llam, T2,D2,U2,C2, der] = RefreshTransition(sec, sol,n, T, D,U,Vb,s1,h,C2 )
+function [ tran, T2,D2,U2,C2, der] = RefreshTransition(sec, sol,n, T, D,U,Vb,s1,h,C2 )
 %TRANSITION handles the Refresh of the Transition intervall
 
-nu=evalin('base','nu');
 
 C2=min(C2,0.3);
 C2=max(C2,0.0000001);
@@ -15,7 +14,7 @@ U2=U(2);
 Uref=U2;
 
 
-s2=s1+h;
+s2=s1 + h;
 if sol.Tripping(sec); 
     tr=true; 
 else
@@ -78,16 +77,17 @@ k=0; res=1;
 end % <- End of iteration for current intervall
 
 if res>0.1 
-    %disp(['not konverged->solution extrapolated at transition node residuum: ' num2str(res)] );
+   % disp(['not konverged->solution extrapolated at transition node residuum: ' num2str(res)] );
     T2=T(1)*sqrt(s2/s1);
     D2=D(1)*sqrt(s2/s1); 
     C2=0.05;
     U2=U(2);
 end      
 
-Llam= sT-s1;     
-
- 
+tran.Llam= sT-s1;     
+tran.Lturb= s2-sT; 
+tran.wt= tran.Llam/h;
+tran.wl= 1 - tran.wt;
 
 end
 

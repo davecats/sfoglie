@@ -3,7 +3,7 @@ function [ J, rhs] = JacobiM( prf,wake,sol,Unew,D)
 %               for solution vector z=[T1,..,TN, C1,.., CN,m1,..,mN]^T 
 
 
-%nu=evalin('base','nu');
+nu=evalin('base','nu');
 dim=size(Unew);
 Nges=prf.N + wake.N;
 
@@ -204,6 +204,10 @@ else % forced Transition
     der.df2_ds(2)=der.df2_ds(2) + der.df2_dsF;
     der.df3_ds(2)=der.df3_ds(2) + der.df3_dsF;
 end 
+
+
+
+
 f1(indM)=fT(1);
 f2(indM)=fT(2);
 f3(indM)=fT(3);
@@ -240,11 +244,14 @@ if ~sol.Tripping(2) % free Transition
     [ fT, der,~ ] = TransitionEQ( n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) );  
 else % forced Transition
     [ fT, der,~ ] = TransitionEQ( n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) ,sol.sT(2),true);  
-    % add forced transition derivate
+    % add forced transition derivate  
     der.df1_ds(2)=der.df1_ds(2) + der.df1_dsF;
     der.df2_ds(2)=der.df2_ds(2) + der.df2_dsF;
-    der.df3_ds(2)=der.df3_ds(2) + der.df3_dsF;
+    der.df3_ds(2)=der.df3_ds(2) + der.df3_dsF;  
 end  
+
+
+
 f1(indM)=fT(1);
 f2(indM)=fT(2);
 f3(indM)=fT(3);
@@ -283,10 +290,10 @@ Node1=[Node1, (prf.N+1:prf.N+wake.N-1)];
 Node2=[Node2, (prf.N+2:prf.N+wake.N)  ];
 
 % Equation index -> no FDM equation for LE panel, TE panel and last wake node -> 9 additional Equations neccessary
-EQ = [(1:prf.Nle-2),(prf.Nle:prf.N-1),(prf.N+1:prf.N+wake.N-1) ];
+EQ = [(1:prf.Nle-2),(prf.Nle:prf.N-1),(prf.N+1:prf.N + wake.N-1) ];
 
 % different order for Equation System
-EQsys= [1:prf.Nle-2, prf.Nle+1:prf.N, prf.N+2:prf.N+wake.N];
+EQsys= [1:prf.Nle-2, prf.Nle+1:prf.N, prf.N+2:prf.N + wake.N];
 
 % total derivates of equations in respect to m   
 

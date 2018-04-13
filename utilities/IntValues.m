@@ -12,6 +12,7 @@ end
 
 Nle=find(e(:,1)>0,1);
 
+
 % shear forces of each panel in x and y direction 
 fR_x= tau.*e(:,1);
 fR_y= tau.*e(:,2);
@@ -20,28 +21,26 @@ fR_y= tau.*e(:,2);
 fR_x(1:Nle-1)=-fR_x(1:Nle-1);
 fR_y(1:Nle-1)=-fR_y(1:Nle-1);
 
+
+% add blowing contribution
 if nargin==8
-   Cp = Cp + 0.5*Vb(1:length(Cp)).^2;   
+   Cp = Cp + 0.5*sign(Vb(1:length(Cp))).*Vb(1:length(Cp)).^2;   
 end
 
 % pressure forces of each panel in x and y direction 
 fp_x= Cp.*n(:,1);
 fp_y= Cp.*n(:,2);
 
-% add blowing contribution
-
     
 % integrate with simpson law
-FR_x= -NumInt(fR_x,s,mode);
-FR_y= -NumInt(fR_y,s,mode);
+FR_x= 2*NumInt(fR_x,s,mode); % factor 2 because of tau=cf/2
+FR_y= 2*NumInt(fR_y,s,mode);
 FP_x= NumInt(fp_x,s,mode);
 FP_y= NumInt(fp_y,s,mode);
 
 % total force
-Fx=2*FR_x + FP_x;
-Fy=2*FR_y + FP_y;
-
-
+Fx=FR_x + FP_x;
+Fy=FR_y + FP_y;
 
 
 % Transform to coordinate system in stream direction
@@ -50,7 +49,7 @@ FY= -Fx*sin(alfa) + Fy*cos(alfa);
 
 CL=FY;
 Cdrag=abs(FX);
-Cnu= 2*sqrt(FR_x^2 + FR_y^2);
+Cnu= abs( FR_x*cos(alfa) );
 
 
 

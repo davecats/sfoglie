@@ -4,8 +4,8 @@ function  sol  = GetInitialSolution( prf, wake, Uinv, Vb, Re, InVal, trip, xtrip
 %                   delta2=0.29004*sqrt( s_1*nu/U_1)
 %                   delta1=2.0754 *delta2
 
-N=prf.N;
 nu=evalin('base','nu');
+N=prf.N;
 Nle=prf.Nle;
 
 dim=size(Uinv);
@@ -115,9 +115,6 @@ sol = walkBoundary(prf,wake,sol,3);
 %mass defect
 sol.m=sol.U.*sol.D;
 
-% % neglect TE gap for mass defect calculation
-% Dts=sol.D; Dts(prf.N+1)= Dts(prf.N+1)-prf.gap;
-% sol.m=sol.U.*Dts;
 
 % calculate Lift coefficient
 sol.CL=getCL(prf,sol.U);

@@ -1,40 +1,43 @@
-function [CL , dCL_dalfa] = getCL(prf,U, AlfaDer)
+function [CL ] = getCL(prf,U,mode)
 %GETCL  calculates the lift coefficient for the profile with given boundary
-%       edge tangential velocity using midpoint integration rule ( second order accurate)
+%       edge tangential velocity 
+%       mode=1: midpoint integration rule ( second order accurate) ->  default
+%       mode=2: Simpson integration rule ( fourth order accurate)
 
-
-
-h=( prf.panels.X(2,:)-prf.panels.X(1,:) )*cos(prf.alfa) + ( prf.panels.Y(2,:)-prf.panels.Y(1,:) )*sin(prf.alfa);
-h=h';
-
-SQU=(U(1:prf.N)/prf.Uinfty).^2;
-SQU=[SQU;SQU(1)];
-
-% mid point integral rule
-CC1= 1- SQU(1:end-1) ;
-CC2= 1- SQU(2:end  ) ;
-CC= h.*(CC1+CC2)/2;
-
-CL=sum(CC);
-
-
-if nargin==3 && AlfaDer
-    dxa=-(prf.panels.X(2,:)-prf.panels.X(1,:)  )*sin(prf.alfa) + (prf.panels.Y(2,:)-prf.panels.Y(1,:) )*cos(prf.alfa);
-    CA= dxa'.*(CC1+CC2)/2;
-    dCL_dalfa=sum(CA);
+if nargin==2
+    mode=1;
 end
 
+CP= 1- (U(1:prf.N)/prf.Uinfty).^2;
+
+% add TE CP
+CP=[CP;CP(1)]; 
+
+% panel midpoint value
+CPM= 0.5* (CP(2:end)+CP(1:end-1));
+
+% force distributions of panel midpoints
+fpx = CPM.*prf.panels.n(1,:)';
+fpy = CPM.*prf.panels.n(2,:)';
+
+if mode==1 % midpointrule
+   Fpx= sum( fpx.*prf.panels.L' );
+   Fpy= sum( fpy.*prf.panels.L' );
+else % simpson rule
+   s=[prf.s ,prf.s(end)+prf.panels.L(end)];
+   s= 0.5*(s(2:end)+s(1:end-1));
+   
+   Fpx=NumInt(fpx,s);
+   Fpy=NumInt(fpy,s);   
 end
 
-% without TE
-% h=( prf.nodes.X(2:end)-prf.nodes.X(1:end-1) )*cos(prf.alfa) + ( prf.nodes.Y(2:end)-prf.nodes.Y(1:end-1) )*sin(prf.alfa);
-% h=h';
-% 
-% SQU=(U(1:prf.N)/prf.Uinfty).^2;
-% 
-% % mid point integral rule
-% CC1= 1- SQU(1:end-1) ;
-% CC2= 1- SQU(2:end  ) ;
-% CC= h.*(CC1+CC2)/2;
-% 
-% CL=sum(CC);
+% transformation in streamwise coordinate System
+%FX=  Fpx*cos(prf.alfa) + Fpy*sin(prf.alfa);
+FY= -Fpx*sin(prf.alfa) + Fpy*cos(prf.alfa);
+
+CL=FY;
+
+
+end
+
+
