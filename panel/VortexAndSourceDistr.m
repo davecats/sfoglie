@@ -67,7 +67,7 @@ psi = (1/(2*pi))*( -X1.*t1 + X2.*t2 + Y.*(lnr1 - lnr2) );
 B=[psi(:,1:end-1), zeros(N+1,1)];
 qTE=psi(:,end);
 
-if prf.IsSharp
+if prf.sharpTE
     GTE=(1/(2*pi))*Y(:,end)*pi;
 end
 

@@ -1,10 +1,15 @@
-function  sol  = GetInitialSolution( prf, wake, Uinv, Vb, Re, InVal, trip, xtrip )
+function  sol  = GetInitialSolution( prf, flo, tri, eng, Uinv, Vb, InVal)
 %GETINITIALSOLUTION integrates the Boundary equations with the inviscid velocity using 
 %                   the initial values from Eppler 1980:
 %                   delta2=0.29004*sqrt( s_1*nu/U_1)
 %                   delta1=2.0754 *delta2
 
-nu=evalin('base','nu');
+wake=flo.wake;
+Re=flo.Re;
+nu=flo.nu;
+trip=tri.active;
+xtrip=tri.x;
+
 N=prf.N;
 Nle=prf.Nle;
 
@@ -74,8 +79,8 @@ else % -> Thwaite
     sol.HK(Nle)=2.2;
 end
 
-[ sol.T(prf.Nle-1), sol.D(prf.Nle-1) ] = ImproveStartNodeSol( sol.U(prf.Nle-1),prf.LE1,sol.Vb(prf.Nle-1),Ts,Ds);
-[ sol.T(prf.Nle)  , sol.D(prf.Nle)   ] = ImproveStartNodeSol( sol.U(prf.Nle)  ,prf.LE2,sol.Vb(prf.Nle)  ,Ts,Ds);
+[ sol.T(prf.Nle-1), sol.D(prf.Nle-1) ] = ImproveStartNodeSol( nu, sol.U(prf.Nle-1),prf.LE1,sol.Vb(prf.Nle-1),Ts,Ds);
+[ sol.T(prf.Nle)  , sol.D(prf.Nle)   ] = ImproveStartNodeSol( nu, sol.U(prf.Nle)  ,prf.LE2,sol.Vb(prf.Nle)  ,Ts,Ds);
 
 % initial node values
 sol.c(prf.Nle-1)=0;
@@ -90,14 +95,14 @@ sol.Ret(prf.Nle)=sol.T(prf.Nle)*sol.U(prf.Nle)/nu;
 %suction side
 %------------------------------------------------------------------------------------
 
- sol = walkBoundary(prf,wake,sol,1);
+ sol = walkBoundary(prf,wake,sol,flo,eng,1);
 
  
 
 % pressure side
 %------------------------------------------------------------------------------------
 
- sol = walkBoundary(prf,wake,sol,2);
+ sol = walkBoundary(prf,wake,sol,flo,eng,2);
 
 
 % wake
@@ -109,7 +114,7 @@ sol.D(N+1)=sol.D(1) + sol.D(N) + prf.gap;
 sol.HK(N+1)=(sol.D(N+1)-prf.gap)/sol.T(N+1); % TE gap does not go into shape parameter
 sol.Ret(N+1)=sol.T(N+1)*sol.U(N+1)/nu;
 
-sol = walkBoundary(prf,wake,sol,3);
+sol = walkBoundary(prf,wake,sol,flo,eng,3);
 
 
 %mass defect
@@ -117,7 +122,7 @@ sol.m=sol.U.*sol.D;
 
 
 % calculate Lift coefficient
-sol.CL=getCL(prf,sol.U);
+sol.CL=getCL(prf,flo,sol.U);
 
 
 % final values

@@ -103,7 +103,7 @@ p2_eta=[zeros(N,1), dps2_deta(:,1:end-1)];
 dpsi_dxi = p1_xi + p2_xi;
 dpsi_deta= p1_eta + p2_eta;
 
-if prf.IsSharp
+if prf.sharpTE
     dGTE_dxi=0;
     dGTE_deta=0;
 end

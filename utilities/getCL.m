@@ -1,14 +1,14 @@
-function [CL ] = getCL(prf,U,mode)
+function [CL ] = getCL(prf,flo,U,mode)
 %GETCL  calculates the lift coefficient for the profile with given boundary
 %       edge tangential velocity 
 %       mode=1: midpoint integration rule ( second order accurate) ->  default
 %       mode=2: Simpson integration rule ( fourth order accurate)
 
-if nargin==2
+if nargin==3
     mode=1;
 end
 
-CP= 1- (U(1:prf.N)/prf.Uinfty).^2;
+CP= 1- (U(1:prf.N)/flo.Uinfty).^2;
 
 % add TE CP
 CP=[CP;CP(1)]; 
@@ -33,7 +33,7 @@ end
 
 % transformation in streamwise coordinate System
 %FX=  Fpx*cos(prf.alfa) + Fpy*sin(prf.alfa);
-FY= -Fpx*sin(prf.alfa) + Fpy*cos(prf.alfa);
+FY= -Fpx*sin(flo.alfa) + Fpy*cos(flo.alfa);
 
 CL=FY;
 

@@ -1,4 +1,4 @@
-function [ f1,f2,der] = JacobiLam( T,U,Vb,H,Ret,h,s1)
+function [ f1,f2,der] = JacobiLam( T,U,Vb,H,Ret,h,s1,nu)
 %JACOBILAM          calculates the funtcion value and the derivates for Newton method
 %                   of the momentum EQ and the shape parameter EQ in
 %                   laminar case for start and end point of each intervall
@@ -9,7 +9,6 @@ function [ f1,f2,der] = JacobiLam( T,U,Vb,H,Ret,h,s1)
 %                   h : Vector with discretisation stepsize
 
 
-nu=evalin('base','nu');
 N=length(T); 
 
 

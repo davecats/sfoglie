@@ -1,4 +1,4 @@
-function [ f1,f2,df_dT,df_dD ,df_dU, df_dh] = SingleJacobiLam( T,U,Vb,H,Ret,h,s1,diffU)
+function [ f1,f2,df_dT,df_dD ,df_dU, df_dh] = SingleJacobiLam( T,U,Vb,H,Ret,h,s1,diffU,nu)
 %SINGLEJACOBILAM    calculates the funtcionvalue and the derivates for Newton method
 %                   of the momentum EQ and the shape parameter EQ in laminar case of known "1" values
 %       Variables:  DI: displacementthicknes
@@ -11,7 +11,6 @@ function [ f1,f2,df_dT,df_dD ,df_dU, df_dh] = SingleJacobiLam( T,U,Vb,H,Ret,h,s1
 
 
 
-nu=evalin('base','nu');
 N=length(T); 
 
 s2=s1+h;

@@ -1,4 +1,4 @@
-function [ tran, T2,D2,U2,C2, der] = RefreshTransition(sec, sol,n, T, D,U,Vb,s1,h,C2 )
+function [ tran, T2,D2,U2,C2, der] = RefreshTransition(sec, flo,eng,sol,n, T, D,U,Vb,s1,h,C2 )
 %TRANSITION handles the Refresh of the Transition intervall
 
 
@@ -15,7 +15,7 @@ Uref=U2;
 
 
 s2=s1 + h;
-if sol.Tripping(sec); 
+if sol.Tripping(sec)
     tr=true; 
 else
     tr=false; 
@@ -33,9 +33,9 @@ k=0; res=1;
     D(2)=D2; T(2)=T2; U(2)=U2; 
     
     if tr % Tripping
-        [f, der, sT]=TransitionEQ( n, T, D,U,Vb,s1,h, C2, sol.sT(sec),true );
+        [f, der, sT]=TransitionEQ( flo, eng, n, T, D,U,Vb,s1,h, C2, sol.sT(sec),true );
     else
-        [f, der, sT]=TransitionEQ( n, T, D,U,Vb,s1,h, C2);
+        [f, der, sT]=TransitionEQ( flo, eng, n, T, D,U,Vb,s1,h, C2);
     end
     J= [ der.df1_dT(2), der.df1_dD(2), 0            ,der.df1_dU(2) ; ...
          der.df2_dT(2), der.df2_dD(2), der.df2_dC(2),der.df2_dU(2) ; ...

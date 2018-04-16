@@ -1,24 +1,16 @@
-function [ f, erg,sT ] = TransitionEQ( n, T, D,U,Vb,s1,h, C2,sF , IsForced)
+function [ f, erg,sT ] = TransitionEQ( flo,eng, n, T, D,U,Vb,s1,h,C2,sF ,IsForced)
 %TRANSITIONEQ   gives the equationsystem for the transition panel
 %               -> uses sum of laminar and turbulent part for momentum and shapeparameter equation
 %               -> uses Ctau Equation only for turbulent part
 
-try
-    nkrit=evalin('base','nkrit');
-catch
-    nkrit=9;
-end
-nu=evalin('base','nu');
-try
-    TranEQ2=evalin('base','TranEQ2');
-catch
-    TranEQ2=false;
-end
+nkrit=flo.nkrit;
+nu=flo.nu;
+TranEQ2=eng.tranEQ;
 
-if nargin==8; IsForced=false;  end
+if nargin==10; IsForced=false;  end
 
 if TranEQ2 && ~IsForced
-   [ f, erg,sT ] = TransitionEQ2( n, T, D,U,Vb,s1,h, C2) ; return; 
+   [ f, erg,sT ] = TransitionEQ2( flo,eng,n, T, D,U,Vb,s1,h, C2) ; return; 
 end
 
 
@@ -78,7 +70,7 @@ if ~IsForced
         dRetT_dT=UT/nu;
         dRetT_dU=TT/nu;
 
-        [dn,ddn_dT,ddn_dH, ddn_dRet,ddn_dn] = AmplificationDerivate([H(1); HT],[Ret(1); RetT],[T(1);TT],true,[n(1) ;nkrit]);
+        [dn,ddn_dT,ddn_dH, ddn_dRet,ddn_dn] = AmplificationDerivate(flo,[H(1); HT],[Ret(1); RetT],[T(1);TT],true,[n(1) ;nkrit]);
 
         if dn<0; break; end % leave loop in case there is a Amplification decrease
         
@@ -281,7 +273,7 @@ Vl=[Vb(1);VT];
 Hl=Dl./Tl;
 Rel= Tl.*Ul/nu;
 
-[ f1,f2,der] = JacobiLam( Tl,Ul,Vl,Hl,Rel,hl,s1);
+[ f1,f2,der] = JacobiLam( Tl,Ul,Vl,Hl,Rel,hl,s1,nu);
 
 
 fl=[f1;f2];
@@ -349,7 +341,7 @@ dCT_ds2= dCT_dTT*dTT_ds2 + dCT_dDT*dDT_ds2 + dCT_dUT*dUT_ds2;
 
 C=[CT; C2];
 
-[ f1,f2,f3,der ] = JacobiTurb(Dt,Tt,C,Ut,Vt,Ht,Ret,ht,sT,false);
+[ f1,f2,f3,der ] = JacobiTurb(Dt,Tt,C,Ut,Vt,Ht,Ret,ht,sT,false,false,nu);
 
 ft=[f1;f2;f3];
 

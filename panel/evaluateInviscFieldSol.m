@@ -44,11 +44,11 @@ psi1=-(1./(4*pi*L)).*( (X.*(X-2*L)-Y.^2).*lnr1 - ((L-X).^2-Y.^2).*lnr2 ...
 psi2=-(1./(4*pi*L)).*( (Y.^2-X.^2).*lnr1 +(X.^2-Y.^2-L.^2).*lnr2 ...
                  + 2*Y.*X.*(t2-t1) +(1/2)*L.*(L+2*X));
 
-if prf.IsSharp==false && withoutTE==false;
+if prf.sharpTE==false && withoutTE==false;
     % Trailing edge coefficient for gamma_TE              
     GTE=psi1(end)+psi2(end);
 
-elseif prf.IsSharp
+elseif prf.sharpTE
     GTE=(1/(2*pi))*Y(:,end)*pi;
     
 end
@@ -61,7 +61,7 @@ psi2=[0, psi2(1:end-1)];
 % Coefficient matrix for gammas
 A=psi1+psi2;
 
-if nargin==3 && prf.IsSharp==false
+if nargin==3 && prf.sharpTE==false
     %insert TE contribution
     cor=prf.panels.theta(end);
     t1=t1(end)-cor;
@@ -78,10 +78,9 @@ end
 
 psi=A*fld.gamma; 
 
-u=evalin('base','ui');
-v= evalin('base','vi');
+
 % add freee stream
-psi=psi + u*xi(2)-v*xi(1);
+psi=psi + fld.ui*xi(2)-fld.vi*xi(1);
 
 
 end

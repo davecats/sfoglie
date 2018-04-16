@@ -1,12 +1,7 @@
-function [n, TranU,TranL] = IntegrateAmplification(prf,sol)
+function [n, TranU,TranL] = IntegrateAmplification(prf,sol,flo)
 %INTEGRATEAMPLIFICATION     integrates the amplification factor for each
 %                           Boundary node with known shape parameter and Ret values
-
-try
-    nkrit=evalin('base','nkrit');
-catch
-    nkrit=9;
-end
+nkrit=flo.nkrit;
 
 % suction side
 
@@ -14,7 +9,7 @@ n=zeros(size(sol.c));
 ind=(prf.Nle-1:-1:sol.TranU);
 indM=ind(2:end);
 
-dn = AmplificationDerivate(sol.HK(ind),sol.Ret(ind),sol.T(ind) );
+dn = AmplificationDerivate(flo,sol.HK(ind),sol.Ret(ind),sol.T(ind) );
 dn=max(0,dn); % make sure that Amplification does not decrease
 
 h=prf.panels.L(indM)';

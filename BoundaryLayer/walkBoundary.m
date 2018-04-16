@@ -1,4 +1,4 @@
-function sol= walkBoundary(prf,wake,sol,section)
+function sol= walkBoundary(prf,wake,sol,flo,eng,section)
 %WALKBOUNDARY integrates the Boundary Layer equations with the pre set initial value and velocity vector 
 %             using finite differences method for discretisation and solves the resulting nonlinear equations
 %             with a Newton Method for each integration step.
@@ -11,12 +11,8 @@ function sol= walkBoundary(prf,wake,sol,section)
 
 
 % read critical amplifikation factor
-try
-    nkrit=evalin('base','nkrit');
-catch
-    nkrit=9;
-end
-nu=evalin('base','nu');
+nkrit=flo.nkrit;
+nu=flo.nu;
 Lges=[prf.panels.L, wake.L]; 
 
 
@@ -74,7 +70,7 @@ for i=Start:step:Ende
             H=[HK1;HK2];
             Ret= T.*U/nu; 
             if HKset==false % no seperation occured
-                [ f1,f2,df_dT,df_dD ] = SingleJacobiLam(T,U, Vb,H,Ret,Lges(i-shift),sBL(i),false); 
+                [ f1,f2,df_dT,df_dD ] = SingleJacobiLam(T,U, Vb,H,Ret,Lges(i-shift),sBL(i),false,nu); 
                 % Jacobimatrix for unknown values at 2
                 J=[df_dT, df_dD];         
 
@@ -108,7 +104,7 @@ for i=Start:step:Ende
             %-------------------------------------------------------------------------------
             if HKset
                 % add condition H2 = Htmp to Newton System and solves also for new velocity U2
-                [ f1,f2,df_dT,df_dD,df_dU] = SingleJacobiLam(T,U, Vb,H,Ret,Lges(i-shift),sBL(i),true); 
+                [ f1,f2,df_dT,df_dD,df_dU] = SingleJacobiLam(T,U, Vb,H,Ret,Lges(i-shift),sBL(i),true,nu); 
                 J=[df_dT, df_dD, df_dU; -D(2)/T(2)^2, 1/T(2),0];
                 % right hand side of EQ system
                 rhs=[-f1;-f2; Htmp - D(2)/T(2)];
@@ -143,7 +139,7 @@ for i=Start:step:Ende
             Ctau=[C1;C2];
             
             if  HKset==false  % no seperation occured
-                [ f1,f2,f3,df_dT,df_dD,df_Ct ] = SingleJacobiTurb(D,T,Ctau,U,Vb,H,Ret,Lges(i-shift),sBL(i),false,IsWake,gap(i:i+step)); 
+                [ f1,f2,f3,df_dT,df_dD,df_Ct ] = SingleJacobiTurb(D,T,Ctau,U,Vb,H,Ret,Lges(i-shift),sBL(i),false,IsWake,gap(i:i+step),nu); 
                 % Jacobimatrix for unknown values at 2
                 J=[df_dT, df_dD,df_Ct ];
                 rhs=-[f1;f2;f3];
@@ -185,7 +181,7 @@ for i=Start:step:Ende
             %-------------------------------------------------------------------------------
             if HKset
                 % add condition H2 = Htmp to Newton System and solves for new velocity U2
-                [ f1,f2,f3,df_dT,df_dD,df_Ct,df_dU] = SingleJacobiTurb(D,T,Ctau,U,Vb,H,Ret,Lges(i-shift),sBL(i),true,IsWake,gap(i:i+step));
+                [ f1,f2,f3,df_dT,df_dD,df_Ct,df_dU] = SingleJacobiTurb(D,T,Ctau,U,Vb,H,Ret,Lges(i-shift),sBL(i),true,IsWake,gap(i:i+step),nu);
                 % Jacobimatrix for unknown values at 2
                 J=[df_dT, df_dD, df_Ct,df_dU; -D(2)/T(2)^2, 1/T(2),0,0];
                 rhs=[-f1;-f2;-f3; Htmp- D(2)/T(2)];
@@ -254,7 +250,7 @@ for i=Start:step:Ende
     if lam
             % evaluate the amplification equation and check for transition
         %---------------------------------------------------------------------
-        n2 = AmplSol(sol.c(i), T, U, H,Ret, Lges(i-shift) );
+        n2 = AmplSol(flo,sol.c(i), T, U, H,Ret, Lges(i-shift) );
         sol.c(i+step)=n2;
         
         % tripping arc length in current intervall
@@ -273,7 +269,7 @@ for i=Start:step:Ende
             
             % solve the Equations for Transition panel
             ind=i:step:i+step; % node indizes
-            [ Llam,T2,D2,U(2),C1,~ ] = Transition(section, sol,sol.c(ind), sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),sBL(i),Lges(i-shift) );
+            [ Llam,T2,D2,U(2),C1,~ ] = Transition(section, sol, flo, eng, sol.c(ind), sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),sBL(i),Lges(i-shift));
             
             %----------
             % write transition node values

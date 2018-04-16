@@ -1,21 +1,16 @@
-function sol= Refresh(prf,wake,sol)
+function sol= Refresh(prf,flo,sol,eng)
 %Refresh goes through the Boundary layer after each Newton iteration to
 %        find the new transition point and force a certain H-U-correlation for the
 %        seperation region
 
-try
-    nkrit=evalin('base','nkrit');
-catch
-    nkrit=9;
-end
+nkrit=flo.nkrit;
+nu=flo.nu;
 
-nu=evalin('base','nu');
-
-Lges=[prf.panels.L, wake.L]; 
+Lges=[prf.panels.L, flo.wake.L]; 
 
 % initial node values
-[ sol.T(prf.Nle-1), sol.D(prf.Nle-1) ] = ImproveStartNodeSol( sol.U(prf.Nle-1),prf.LE1,sol.Vb(prf.Nle-1));
-[ sol.T(prf.Nle)  , sol.D(prf.Nle)   ] = ImproveStartNodeSol( sol.U(prf.Nle)  ,prf.LE2,sol.Vb(prf.Nle)  );
+[ sol.T(prf.Nle-1), sol.D(prf.Nle-1) ] = ImproveStartNodeSol( nu,sol.U(prf.Nle-1),prf.LE1,sol.Vb(prf.Nle-1));
+[ sol.T(prf.Nle)  , sol.D(prf.Nle)   ] = ImproveStartNodeSol( nu,sol.U(prf.Nle)  ,prf.LE2,sol.Vb(prf.Nle)  );
 
 % initial node values
 sol.c(prf.Nle-1)=0;
@@ -30,7 +25,7 @@ sol.Ret(prf.Nle)=sol.T(prf.Nle)*sol.U(prf.Nle)/nu;
 
 for section=1:3
     if section== 1 % suction side
-        lam=true; IsWake=false;
+        lam=true; Isflo.wake=false;
         Start=prf.Nle-1; step=-1; Ende=2; shift=1;
         s=prf.sU; 
         sBL=s;% arc length in boundary layer direction
@@ -39,7 +34,7 @@ for section=1:3
         j=1; % BL node index
         tr=false;
     elseif section == 2  % pressure side
-        lam=true; IsWake=false;
+        lam=true; Isflo.wake=false;
         Start=prf.Nle; step=1; Ende=prf.N-1; shift=0;
         s=prf.s; 
         sBL=[zeros(1,prf.Nle-1),prf.sL];
@@ -47,12 +42,12 @@ for section=1:3
         TranOld=sol.iTran(2) - Start;
         j=1;
         tr=false;
-    else  % wake
-       lam=false;  IsWake=true;
-       Start=prf.N +1; step=1; Ende=prf.N+wake.N-1; shift=0;
-       s=wake.s; 
-       sBL= [ zeros(1,prf.N),wake.s(1:end-1)+prf.sL(end)]; 
-       gap=[zeros(prf.N,1);wake.gap];
+    else  % flo.wake
+       lam=false;  Isflo.wake=true;
+       Start=prf.N +1; step=1; Ende=prf.N+flo.wake.N-1; shift=0;
+       s=flo.wake.s; 
+       sBL= [ zeros(1,prf.N),flo.wake.s(1:end-1)+prf.sL(end)]; 
+       gap=[zeros(prf.N,1);flo.wake.gap];
        j=prf.N+1;
        sol.T(j)=sol.T(1)+sol.T(prf.N);
        sol.D(j)=sol.D(1) + sol.D(prf.N) + prf.gap; 
@@ -104,7 +99,7 @@ for section=1:3
             Ret=U.*T/nu;
             
             if lam     
-                [ f1,f2,df_dT,df_dD,df_dU ] = SingleJacobiLam(T,U, sol.Vb(ind),H,Ret,Lges(i-shift),sBL(i),true); 
+                [ f1,f2,df_dT,df_dD,df_dU ] = SingleJacobiLam(T,U, sol.Vb(ind),H,Ret,Lges(i-shift),sBL(i),true,nu); 
                 
                 % calculate changes in U for the bigger shape parameter H + 1 where the equation is still fullfilled
                 J=[df_dT, df_dD, df_dU; -H2./T2, 1./T2 ,0];
@@ -139,7 +134,7 @@ for section=1:3
             else % ---------------- turbulent -----------------
                 
                 [ f1,f2,f3,df_dT,df_dD,df_Ct,df_dU] = ...
-                    SingleJacobiTurb(D,T,[sol.c(i);C2],U, sol.Vb(ind),H,Ret,Lges(i-shift),sBL(i),true,IsWake,gap(ind));
+                    SingleJacobiTurb(D,T,[sol.c(i);C2],U, sol.Vb(ind),H,Ret,Lges(i-shift),sBL(i),true,Isflo.wake,gap(ind),nu);
 
                 J=[df_dT, df_dD, df_Ct,df_dU; -H2./T2, 1./T2,0,0];
                 rhs=[-f1;-f2;-f3; 1];
@@ -172,7 +167,7 @@ for section=1:3
             end
              
             % correction for to small H values
-            if IsWake; Hlim=1.00005; else Hlim=1.02; end
+            if Isflo.wake; Hlim=1.00005; else Hlim=1.02; end
             dh= max(0,Hlim - ( D2-gap(i+step) )/T2);
             D2= D2 +dh*T2;
             H2= ( D2-gap(i+step) )/T2;
@@ -183,7 +178,7 @@ for section=1:3
         
         if res>0.1 
             %disp(['not konverged->solution extrapolated, node: ' num2str(i+step) ', residuum: ' num2str(res)] );
-            if IsWake
+            if Isflo.wake
                 T1=sol.T(i); D1=sol.D(i);
                 T2=T1; 
                 tmp=(s(i-prf.N+step)-s(i-prf.N))/(10*D1);
@@ -216,7 +211,7 @@ for section=1:3
         end
 
         if lam % ----------- Transition
-            n2 = AmplSol(sol.c(i),[sol.T(i);T2],[sol.U(i);U2], [sol.HK(i); D2/T2],[sol.Ret(i); T2*U2/nu], Lges(i-shift) );
+            n2 = AmplSol(flo,sol.c(i),[sol.T(i);T2],[sol.U(i);U2], [sol.HK(i); D2/T2],[sol.Ret(i); T2*U2/nu], Lges(i-shift) );
             sol.c(i+step)=n2;
             
              % tripping arc length in current intervall
@@ -235,7 +230,7 @@ for section=1:3
                 
                 lam=false;  
                 % solve the Equations for Transition panel 
-                [ tran,T2,D2,U2,C1,~ ] = RefreshTransition(section, sol,sol.c(ind), sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),sBL(i),Lges(i-shift),C2 );
+                [ tran,T2,D2,U2,C1,~ ] = RefreshTransition(section, flo,eng,sol,sol.c(ind), sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),sBL(i),Lges(i-shift),C2 );
                 %----------
                 % write transition node values
                 sol.iTran(section)=i+step;
@@ -300,7 +295,7 @@ for section=1:3
     
 end
 
-if prf.IsSharp
+if prf.sharpTE
    % make sure the velocities for both TE points are the same 
    sol.U(1)=sol.U(prf.N+1);
    sol.U(prf.N)=sol.U(prf.N+1);

@@ -1,14 +1,14 @@
-function [ J, rhs] = JacobiM( prf,wake,sol,Unew,D)
+function [ J, rhs] = JacobiM( prf,flo,eng,sol,Unew,D)
 %JACOBIM        calculates the Jacobimatrix and right hand side for the Newton system 
 %               for solution vector z=[T1,..,TN, C1,.., CN,m1,..,mN]^T 
 
 
-nu=evalin('base','nu');
+nu=flo.nu;
 dim=size(Unew);
-Nges=prf.N + wake.N;
+Nges=prf.N + flo.wake.N;
 
 % panel length vector
-h=[prf.panels.L,wake.L]';
+h=[prf.panels.L,flo.wake.L]';
 
 
 %prescribe
@@ -42,7 +42,7 @@ s1=prf.sU(ind(1:end-1))';
 
 
 if length(ind)>1 
-    [ f1l,f2l,der] =JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1);
+    [ f1l,f2l,der] =JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,nu);
 
 
     f1(indM)=f1l;
@@ -61,7 +61,7 @@ if length(ind)>1
     n=sol.c(ind); 
 
      [ f3(indM),df3_dC(indM,:), df3_dT(indM,:),df3_dD(indM,:),df3_dU(indM,:),df3_ds(indM,:) ] =...
-                AmplificationEquation(n,sol.T(ind),sol.U(ind),sol.HK(ind),sol.Ret(ind),h(indM)  );
+                AmplificationEquation(flo,n,sol.T(ind),sol.U(ind),sol.HK(ind),sol.Ret(ind),h(indM)  );
 end
 
 % pressure side
@@ -72,7 +72,7 @@ indM=ind(1:end-1);
 s1=prf.sL(indM-prf.Nle+1)';
 
 if length(ind)>1 
-    [ f1l,f2l,der] = JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1);
+    [ f1l,f2l,der] = JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,nu);
 
     f1(indM)=f1l;
     f2(indM)=f2l;
@@ -88,7 +88,7 @@ if length(ind)>1
     % Amplification Equation
     n=sol.c(ind); 
      [ f3(indM),df3_dC(indM,:), df3_dT(indM,:),df3_dD(indM,:),df3_dU(indM,:),df3_ds(indM,:) ] =...
-                AmplificationEquation(n,sol.T(ind),sol.U(ind),sol.HK(ind),sol.Ret(ind),h(indM)  );
+                AmplificationEquation(flo,n,sol.T(ind),sol.U(ind),sol.HK(ind),sol.Ret(ind),h(indM)  );
 end
 
 %                               turbulent part of Boundary
@@ -101,7 +101,7 @@ if length(ind)>1 % check for turbulent flow
     indM=ind(2:end); % indices for midpoint values -> without transition panel
     s1=prf.sU(ind(1:end-1))';
     
-    [ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,false);
+    [ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,false,false,nu);
 
     f1(indM)=f1t;
     f2(indM)=f2t;
@@ -131,7 +131,7 @@ if length(ind)>1
     indM=ind(1:end-1); % indices for midpoint values -> without transition panel
     s1=prf.s(sol.iTran(2):end-1)';
     
-    [ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,false);
+    [ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,false,false,nu);
     
     f1(indM)=f1t;
     f2(indM)=f2t;
@@ -153,14 +153,14 @@ if length(ind)>1
     df3_ds(indM,:)=der.df3_ds;
 end
 
-% wake
+% flo.wake
 %------------------------------------------------------------
-ind=(prf.N+1:prf.N+wake.N);
+ind=(prf.N+1:prf.N+flo.wake.N);
 indM=ind(1:end-1);
-s1=wake.s(1:end-1)'+prf.sL(end);
+s1=flo.wake.s(1:end-1)'+prf.sL(end);
 
 
-[ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,true,wake.gap);
+[ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,true,flo.wake.gap,nu);
 
 f1(indM)=f1t;
 f2(indM)=f2t;
@@ -196,9 +196,9 @@ s1=prf.sU(sol.iTran(1)+1);
 % st=sl+hl;
 
 if ~sol.Tripping(1) % free Transition
-    [ fT, der,~ ] = TransitionEQ( n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) );   
+    [ fT, der,~ ] = TransitionEQ( flo, eng, n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) );   
 else % forced Transition 
-    [ fT, der,~ ] = TransitionEQ( n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) ,sol.sT(1),true);   
+    [ fT, der,~ ] = TransitionEQ( flo, eng, n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) ,sol.sT(1),true);   
     % add forced transition derivate
     der.df1_ds(2)=der.df1_ds(2) + der.df1_dsF;
     der.df2_ds(2)=der.df2_ds(2) + der.df2_dsF;
@@ -241,9 +241,9 @@ s1=prf.sL(sol.iTran(2)-prf.Nle);
 % st=sl+hl;
 
 if ~sol.Tripping(2) % free Transition
-    [ fT, der,~ ] = TransitionEQ( n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) );  
+    [ fT, der,~ ] = TransitionEQ( flo, eng, n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) );  
 else % forced Transition
-    [ fT, der,~ ] = TransitionEQ( n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) ,sol.sT(2),true);  
+    [ fT, der,~ ] = TransitionEQ( flo, eng, n, sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),s1,h(indM), sol.c(ind(2)) ,sol.sT(2),true);  
     % add forced transition derivate  
     der.df1_ds(2)=der.df1_ds(2) + der.df1_dsF;
     der.df2_ds(2)=der.df2_ds(2) + der.df2_dsF;
@@ -285,15 +285,15 @@ Node2= (1:prf.Nle-2);
 % pressure side
 Node1=[Node1, (prf.Nle:prf.N-1)];
 Node2=[Node2, (prf.Nle+1:prf.N)];
-% wake
-Node1=[Node1, (prf.N+1:prf.N+wake.N-1)];
-Node2=[Node2, (prf.N+2:prf.N+wake.N)  ];
+% flo.wake
+Node1=[Node1, (prf.N+1:prf.N+flo.wake.N-1)];
+Node2=[Node2, (prf.N+2:prf.N+flo.wake.N)  ];
 
-% Equation index -> no FDM equation for LE panel, TE panel and last wake node -> 9 additional Equations neccessary
-EQ = [(1:prf.Nle-2),(prf.Nle:prf.N-1),(prf.N+1:prf.N + wake.N-1) ];
+% Equation index -> no FDM equation for LE panel, TE panel and last flo.wake node -> 9 additional Equations neccessary
+EQ = [(1:prf.Nle-2),(prf.Nle:prf.N-1),(prf.N+1:prf.N + flo.wake.N-1) ];
 
 % different order for Equation System
-EQsys= [1:prf.Nle-2, prf.Nle+1:prf.N, prf.N+2:prf.N + wake.N];
+EQsys= [1:prf.Nle-2, prf.Nle+1:prf.N, prf.N+2:prf.N + flo.wake.N];
 
 % total derivates of equations in respect to m   
 
@@ -310,7 +310,7 @@ dD1_dm=dD_dm(Node1,:);
 dD2_dm=dD_dm(Node2,:);
 
 % stagnation point change
-dss_dU1=prf.dsLE_dG1*ones(Nges,1);dss_dU1(prf.Nle:end)=-dss_dU1(prf.Nle:end);% switch sign for pressure side and wake
+dss_dU1=prf.dsLE_dG1*ones(Nges,1);dss_dU1(prf.Nle:end)=-dss_dU1(prf.Nle:end);% switch sign for pressure side and flo.wake
 dss_dU2=prf.dsLE_dG2*ones(Nges,1);dss_dU2(1:prf.Nle-1)=-dss_dU2(1:prf.Nle-1);% switch sign for suction side
 
 
@@ -449,7 +449,7 @@ EMP= [3*(prf.Nle-1)-2,3*(prf.Nle-1)-1,3*(prf.Nle-1),3*prf.Nle-2,3*prf.Nle-1,3*pr
 
 % first suction side node
 %---------------------------------------
-[fs1,fs2, J1 ] = InitialNodeSys(sol.T(prf.Nle-1),sol.D(prf.Nle-1),sol.U(prf.Nle-1),sol.Vb(prf.Nle-1),prf.LE1);
+[fs1,fs2, J1 ] = InitialNodeSys(sol.T(prf.Nle-1),sol.D(prf.Nle-1),sol.U(prf.Nle-1),sol.Vb(prf.Nle-1),prf.LE1,nu);
 dfs1_dT= J1(1,1);
 dfs2_dT= J1(2,1);
 dfs1_dm= J1(1,2)*dD_dm(prf.Nle-1,:) + J1(1,3)*D(prf.Nle-1,:) ...
@@ -475,7 +475,7 @@ J(EMP(3), Nges + prf.Nle-1)= 1;
 
 % first pressure side node
 %---------------------------------------
-[fp1,fp2, J2 ] = InitialNodeSys(sol.T(prf.Nle),sol.D(prf.Nle),sol.U(prf.Nle),sol.Vb(prf.Nle),prf.LE2);
+[fp1,fp2, J2 ] = InitialNodeSys(sol.T(prf.Nle),sol.D(prf.Nle),sol.U(prf.Nle),sol.Vb(prf.Nle),prf.LE2,nu);
 dfp1_dT= J2(1,1);
 dfp2_dT= J2(2,1);
 dfp1_dm= J2(1,2)*dD_dm(prf.Nle,:) + J2(1,3)*D(prf.Nle,:)...
@@ -497,7 +497,7 @@ add(EMP(5))=   J2(2,3)*deltaU(prf.Nle) + J2(2,2)*DDS(prf.Nle) + J2(2,4).*stagn(p
 J(EMP(6), Nges + prf.Nle  )= 1;
 
 
-% conditions for first wake node
+% conditions for first flo.wake node
 %---------------------------------------
 
 % T_N+1=T_1 + T_N

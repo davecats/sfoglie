@@ -1,18 +1,15 @@
-function [solnew,Rel, res] = Update(prf,wake,sol,dT, dc,dm,Uinv,D,k)
+function [solnew,Rel, res] = Update(prf,flo,sol,dT, dc,dm,Uinv,D,k)
 %UPDATE updates the solution from one Newton step and underrelaxes if necessary
 
-nu=evalin('base','nu');
-try
-    nkrit=evalin('base','nkrit');
-catch
-    nkrit=9;
-end
+nu=flo.nu;
+nkrit=flo.nkrit;
+
 
 Un=Uinv + D*(sol.m+dm);
 
 % new Lift Coefficient
 
-CLnew = getCL(prf,Un);
+CLnew = getCL(prf,flo,Un);
 dCL= (CLnew-sol.CL);
 
 dCLmin= max(-0.5, -0.9*sol.CL);
@@ -41,7 +38,7 @@ DU=dU/0.25;
 
 % residual
 % rms= DC.^2 + DT.^2 + DD.^2 + DU.^2;
-% res= sqrt( sum(rms)/(4*prf.N+wake.N) );
+% res= sqrt( sum(rms)/(4*prf.N+flo.wake.N) );
 
 rms= DC(1:prf.N).^2 + DT(1:prf.N).^2 + DD(1:prf.N).^2 + DU(1:prf.N).^2;
 res= sqrt( sum(rms)/(4*prf.N) );
@@ -75,7 +72,7 @@ solnew.m=solnew.D.*solnew.U;
 
 % filter unrealistic Ctau values
 if sol.iTran(1)~=1    ; turb=(sol.iTran(1)-1:-1:1); else turb=[]; end
-turb=[turb,(sol.iTran(2)+1:prf.N+wake.N)];   
+turb=[turb,(sol.iTran(2)+1:prf.N+flo.wake.N)];   
 tmp=sol.c(turb);
 tmp(tmp<0.0000001)=0.0000001;
 tmp(tmp>0.25)=0.25;
@@ -99,11 +96,11 @@ ind=[indCor; indCor2];
 
 if ~isempty(ind)
     %disp(['UPDATE: negativ U filtered. Nodes ', int2str(ind)])
-    sges= [prf.s, (prf.s(end)+prf.panels.L(end)/2)*ones(size(wake.s)) + wake.s]; 
+    sges= [prf.s, (prf.s(end)+prf.panels.L(end)/2)*ones(size(flo.wake.s)) + flo.wake.s]; 
     for k=1:length(ind)
         if ind(k)==1
             solnew.U(ind(k))=solnew.U(ind(k)+1);
-        elseif ind(k)==prf.N+wake.N  || solnew.U(ind(k)+1)<0 %use backward approximation if next velocity is also negativ
+        elseif ind(k)==prf.N+flo.wake.N  || solnew.U(ind(k)+1)<0 %use backward approximation if next velocity is also negativ
             solnew.U(ind(k))=solnew.U(ind(k)-1);
         else % use central approximation if all neighbor velocities are positiv
             solnew.U(ind(k))= ( ( sges(ind(k)+1)-sges(ind(k)) )*solnew.U(ind(k)-1)  +  ( sges(ind(k))-sges(ind(k)-1) )*solnew.U(ind(k)+1)  )...
@@ -139,7 +136,7 @@ solnew.D(ind)=solnew.D(ind) + dh.*solnew.T(ind);
 solnew.HK(ind)=solnew.D(ind)./solnew.T(ind);
 solnew.m(ind)=solnew.D(ind).*solnew.U(ind);
 
-% on wake: Hmin=1.00005
+% on flo.wake: Hmin=1.00005
 tmp=solnew.D(prf.N+1:end);tmp(1)=tmp(1) - prf.gap;
 HT=tmp./solnew.T(prf.N+1:end);
 indw=find(HT<1.00005);
