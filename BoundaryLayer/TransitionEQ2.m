@@ -1,17 +1,13 @@
-function [ f, erg,sT ] = TransitionEQ2( n, T, D,U,Vb,s1,h, C2,sF , IsForced)
+function [ f, erg,sT ] = TransitionEQ2( flo,eng, n, T, D,U,Vb,s1,h, C2,sF , IsForced)
 %TRANSITIONEQ   gives the equationsystem for the transition panel
 %                   different method for determination of transition location
 %               -> uses sum of laminar and turbulent part for momentum and shapeparameter equation
 %               -> uses Ctau Equation only for turbulent part
 
-try
-    nkrit=evalin('base','nkrit');
-catch
-    nkrit=9;
-end
-nu=evalin('base','nu');
+nkrit=flo.nkrit;
+nu=flo.nu;
 
-if nargin==8; IsForced=false;  end
+if nargin==10; IsForced=false;  end
 
 s2=s1 + h;
 
@@ -49,9 +45,9 @@ else
         ReL=UL.*TL/nu;
         
     
-        [ f1,f2,der] = JacobiLam( TL,UL,V,HL,ReL,hL,s1);
+        [ f1,f2,der] = JacobiLam( TL,UL,V,HL,ReL,hL,s1,nu);
     
-        [ f3, df3_dn,df3_dT,df3_dD,~, df3_ds ]=AmplificationEquation(nL,TL,UL,HL,ReL,hL);
+        [ f3, df3_dn,df3_dT,df3_dD,~, df3_ds ]=AmplificationEquation(flo,nL,TL,UL,HL,ReL,hL);
         
         J=[der.df1_dT(2),der.df1_dD(2),0        ,der.df1_ds(2);...  % momentum EQ
            der.df2_dT(2),der.df2_dD(2),0        ,der.df2_ds(2);...  % kin Energy EQ
@@ -89,7 +85,7 @@ else
             TT=w1*T(1)+w2*T(2);
             DT=w1*D(1)+w2*D(2);
             UT=w1*U(1)+w2*U(2);
-            nT=AmplSol(n(1),[T(1);TT], [U(1); UT],[D(1)/T(1); DT/TT],[U(1)*T(1);UT*TT]/nu,hL);
+            nT=AmplSol(flo,n(1),[T(1);TT], [U(1); UT],[D(1)/T(1); DT/TT],[U(1)*T(1);UT*TT]/nu,hL);
             res=abs(nT-nkrit); 
             if res>resmin; hL=hLmin; break; else resmin=res;hLmin=hL; end
             if nT > nkrit + 5e-5
@@ -169,7 +165,7 @@ Vl=[Vb(1);VT];
 Hl=Dl./Tl;
 Rel= Tl.*Ul/nu;
 
-[ f1,f2,der] = JacobiLam( Tl,Ul,Vl,Hl,Rel,hl,s1);
+[ f1,f2,der] = JacobiLam( Tl,Ul,Vl,Hl,Rel,hl,s1,nu);
 
 fl=[f1;f2];
 
@@ -235,7 +231,7 @@ dCT_ds2= dCT_dTT*dTT_ds2 + dCT_dDT*dDT_ds2 + dCT_dUT*dUT_ds2;
 
 C=[CT; C2];
 
-[ f1,f2,f3,der ] = JacobiTurb(Dt,Tt,C,Ut,Vt,Ht,Ret,ht,sT,false);
+[ f1,f2,f3,der ] = JacobiTurb(Dt,Tt,C,Ut,Vt,Ht,Ret,ht,sT,false,false,nu);
 
 ft=[f1;f2;f3];
 

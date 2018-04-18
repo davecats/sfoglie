@@ -1,5 +1,5 @@
 function [ I,fint ] = NumInt( f,x, mode, cum )
-%NumInt Does a numerical Integration where x are are nodes and f the corresponding values
+%NumInt Does a numerical Integration where x are nodes and f the corresponding values
 %       mode=1   - uses Simpson law (default)
 %       mode=2   - uses midpoint law
 %       cum=true - returns the vector fint= int_a^x f dx

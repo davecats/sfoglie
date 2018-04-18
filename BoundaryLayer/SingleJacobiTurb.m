@@ -1,4 +1,4 @@
-function [ f1,f2,f3,df_dT,df_dD,df_dCt,df_dU ] = SingleJacobiTurb( DI,T,Ct,U,Vb,H,Ret,h,s1,diffU,IsWake,Wgap)
+function [ f1,f2,f3,df_dT,df_dD,df_dCt,df_dU ] = SingleJacobiTurb( DI,T,Ct,U,Vb,H,Ret,h,s1,diffU,IsWake,Wgap,nu)
 %SINGLEJACOBITURB    calculates the funtcionvalue and the derivates for Newton method
 %                   of the momentum EQ and the shape parameter EQ in turbulent case of known "1" values
 %       Variables:  DI: displacementthicknes
@@ -9,7 +9,6 @@ function [ f1,f2,f3,df_dT,df_dD,df_dCt,df_dU ] = SingleJacobiTurb( DI,T,Ct,U,Vb,
 %                   h : Vector with discretisation stepsize
 %                   IsWake: true if evaluation on wake
 
-nu=evalin('base','nu');
 N=length(T); 
 dimPl=size(T);
 dimMi=size(h);

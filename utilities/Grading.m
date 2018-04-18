@@ -1,7 +1,7 @@
 function out = Grading( in, xEND, N ,getGrad)
-%GRADING if getGrad: gets the grading for a fixed number of point, a fixed starting length and a fixed end length
+%GRADING if getGrad: gets the grading factor for a fixed number of point, a fixed starting length and a fixed total length
 %               -> in is starting step size
-%        if not  getGrad: gets starting step size with for a fixed number of point, a fixed grading and a fixed end length
+%        if not  getGrad: gets starting step size for a fixed number of point, a fixed grading factor  and a fixed total length
       
 if nargin==3
     getGrad=true;

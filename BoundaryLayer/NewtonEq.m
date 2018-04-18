@@ -1,14 +1,13 @@
-function [solnew, prf] = NewtonEq( prf,wake,sol,D0,Uinv,it)
+function [solnew, prf] = NewtonEq( prf,flo,eng,sol,D0,Uinv,it,pressureCor)
 %NEWTONEQ       sets up the global Newton equationsystem J dz=- f(z) and
 %               solves it iterativly
 %               sol:    initial solution struct
 %               D0:     Coefficients of mass Defekt -> U = Uinv + Dm
 %               it:     max number of iteration steps
 
-% nu=evalin('base','nu');
-% Re=evalin('base','Re');
 
-Nges=prf.N + wake.N;
+
+Nges=prf.N + flo.wake.N;
 k=0;
 res=1;
 
@@ -21,9 +20,42 @@ prf.dsLE_dG2= prf.LE1/(Uinv(prf.Nle) + Uinv(prf.Nle-1));
 %NleStart=prf.Nle;
 GamStart= [Uinv(1:prf.Nle-1); -Uinv(prf.Nle:end)];
 
+
+
+% Model for correction of the pressure Term   
+%------------------------------------------------------------------------------------------
+if nargin==7
+    pressureCor=false;
+end
+Blow=find(sol.Vb~=0);
+
+if ~isempty(Blow) && pressureCor
+     BlowU= Blow(Blow<prf.Nle-1);
+     BlowL= Blow(Blow>prf.Nle);
+     
+     pressureTerm=zeros(size(sol.Vb));
+     if ~isempty(BlowU)
+        sU_b=prf.sU(BlowU);
+        PrU = PressureCorrect(sU_b(end),sU_b(1),prf.sU(end:-1:1)',sol.Vb(prf.Nle-1:-1:1),sol.U(prf.Nle-1:-1:1));
+        PrU=PrU(end:-1:1);
+        pressureTerm(1:prf.Nle-1)=PrU;
+     end
+     if ~isempty(BlowL)
+        sL_b=prf.sL(BlowL-prf.Nle+1);
+        PrL = PressureCorrect(sL_b(1),sL_b(end),prf.sL',sol.Vb(prf.Nle:prf.N),sol.U(prf.Nle:prf.N));
+        pressureTerm(prf.Nle:prf.N)=PrL;
+     end
+     % add effect of pressure Term to Vb     
+     Vb_base=sol.Vb;
+     sol.Vb=sol.Vb - pressureTerm;
+end
+%------------------------------------------------------------------------------------------
+
+
+
 %xtrr=zeros(it,2);
 
-while res>5e-4 && k<it 
+while res>eng.tol && k<it 
     
      % adjust sign for pressure/suction side
      sgn=ones(size(D0));
@@ -35,13 +67,13 @@ while res>5e-4 && k<it
      if k>0;
         sol=solnew;
         % refresh -> search new transition point and runs inverse mode for seperation
-        sol = Refresh( prf,wake, sol );
+        sol = Refresh( prf,flo, sol, eng );
      end
      %xtrr(k+1,:)=sol.tran.x';
      
      Un=Uinv + D*sol.m; % velocity solution with new source Terms
 
-    [J,rhs]=JacobiM(prf,wake,sol, Un,D);
+    [J,rhs]=JacobiM(prf,flo,eng,sol, Un,D);
     dz=J\rhs; % Solution of equation -> gives correction for current Newton-step
     
     dT=dz(1:Nges);
@@ -49,7 +81,7 @@ while res>5e-4 && k<it
     dm=dz(2*Nges+1:end);
 
     % updates values with underrelaxation for big changes
-    [solnew,Rel,res]=Update(prf,wake,sol,dT,dc,dm,Uinv,D,k);
+    [solnew,Rel,res]=Update(prf,flo,sol,dT,dc,dm,Uinv,D,k);
 
     % max residuum
     k=k+1;
@@ -98,7 +130,7 @@ while res>5e-4 && k<it
     
 end
 
-%solnew = Refresh( prf,wake, solnew );
+%solnew = Refresh( prf,flo.wake, solnew );
 
 solnew.residual=res;
 
@@ -111,20 +143,26 @@ solnew.residual=res;
 % ylabel('x_tran')
 % legend('suction','pressure')
 
+if ~isempty(Blow) && pressureCor
+    % substract effect of pressure to get Normal vb Term   
+     solnew.Vb=Vb_base;
+     solnew.pressureTerm=pressureTerm;
+end
+
 
 % final values
 % calculate values of end solution (Cf, CD, CL ...)
 
 indL=(solnew.iTran(1)+1:solnew.iTran(2)-1); % laminar node indizes
-indT=[1:solnew.iTran(1) , solnew.iTran(2):prf.N]; % wake node indizes
-indW=prf.N+1:prf.N+wake.N; % turbulent node indizes
+indT=[1:solnew.iTran(1) , solnew.iTran(2):prf.N]; % flo.wake node indizes
+indW=prf.N+1:prf.N+flo.wake.N; % turbulent node indizes
 
 I=zeros(size(solnew.T));
 solnew.Cf=I;
 solnew.Cf(indL)= CF2lam(solnew.HK(indL), solnew.Ret(indL));
 solnew.Cf(indT)= CF2turb(solnew.HK(indT), solnew.Ret(indT));
 
-solnew.tau=solnew.Cf .*(solnew.U/prf.Uinfty).^2;
+solnew.tau=solnew.Cf .*(solnew.U/flo.Uinfty).^2;
 solnew.Cf=2*solnew.Cf;
 
 solnew.HS=I;
@@ -143,8 +181,8 @@ solnew.CD(indW)=CD2turb(solnew.HK(indW),solnew.Ret(indW),solnew.HS(indW), solnew
 solnew.CD=0.5*solnew.HS.*solnew.CD;
 
 
-solnew.Cp=1-(solnew.U/prf.Uinfty).^2;
-if prf.IsSharp
+solnew.Cp=1-(solnew.U/flo.Uinfty).^2;
+if prf.sharpTE
    solnew.Cp(prf.N)=solnew.Cp(1); 
 end
 
@@ -168,18 +206,18 @@ disp(' ')
 
 % Integral values
 
- if prf.IsSharp
-    [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N),solnew.tau(1:prf.N),prf.s,prf.nodes.e',prf.nodes.n',...
-                                                    prf.alfa, true,solnew.Vb/prf.Uinfty);
+ if prf.sharpTE
+    [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N-1),solnew.tau(1:prf.N-1),prf.s(1:prf.N-1),prf.nodes.e(:,1:prf.N-1)',...
+                                         prf.nodes.n(:,1:prf.N-1)', flo.alfa, true,solnew.Vb/flo.Uinfty);
  else
     %include TE Panel contribution
     [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N+1),solnew.tau(1:prf.N+1),[prf.s,prf.s(end)+prf.panels.L(end)],...
                                                 [prf.nodes.e,prf.panels.e(:,end)]',[prf.nodes.n,prf.panels.n(:,end)]',...
-                                                prf.alfa, true,solnew.Vb/prf.Uinfty);
+                                                flo.alfa, true,solnew.Vb/flo.Uinfty);
  end
 
 if prf.N<80 % numeric integration for drag gets to inaccurate -> use Squire-Young formula
-    solnew.Cdrag=DragCoeff(solnew.T(end),solnew.HK(end),solnew.U(end)/prf.Uinfty, 1 );
+    solnew.Cdrag=DragCoeff(solnew.T(end),solnew.HK(end),solnew.U(end)/flo.Uinfty, 1 );
 end
 
 % integral Cf

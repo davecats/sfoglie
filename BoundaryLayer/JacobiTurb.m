@@ -1,4 +1,4 @@
-function [ f1,f2,f3,der ] = JacobiTurb( DI, T,Ct,U,Vb,H,Ret,h,s1,IsWake,Wgap)
+function [ f1,f2,f3,der ] = JacobiTurb( DI, T,Ct,U,Vb,H,Ret,h,s1,IsWake,Wgap,nu)
 %SINGLEJACOBITURB   calculates the funtcion value and the derivates for Newton method
 %                   of the momentum EQ and the shape parameter EQ in turbulent case  for start and end point of each intervall
 %       Variables:  DI: displacement thickness
@@ -10,7 +10,7 @@ function [ f1,f2,f3,der ] = JacobiTurb( DI, T,Ct,U,Vb,H,Ret,h,s1,IsWake,Wgap)
 %                   IsWake: true if evaluation on wake
 
 
-nu=evalin('base','nu');
+
 N=length(T); 
 dimPl=size(T);
 dimMi=size(h);

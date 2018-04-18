@@ -1,14 +1,10 @@
-function [dn,ddn_dT,ddn_dH, ddn_dRet,ddn_dn] = AmplificationDerivate(H,Ret,T,getDerivates,n )
+function [dn,ddn_dT,ddn_dH, ddn_dRet,ddn_dn] = AmplificationDerivate(flo,H,Ret,T,getDerivates,n )
 %AMPLIFICATIONEQ    calculates the Amplification increase of each interval dn
 %                   and its partial derivates in respect to T, H12 and Ret 
 
-try
-    nkrit=evalin('base','nkrit');
-catch
-    nkrit=9;
-end
+nkrit=flo.nkrit;
 
-if nargin==3
+if nargin==5
     getDerivates=false;
 end
 
@@ -49,7 +45,7 @@ A(ind)= (Af.*DA./T(ind)).*Rf;
 Am=sqrt( 0.5*(A(1:end-1).^2 + A(2:end).^2) ); % midpoint approximation
 
 % addition to make shure that dn/ds>0
-if getDerivates==false || nargin==4
+if getDerivates==false || nargin==5
     n=A;
     %n=zeros(size(A));
 end

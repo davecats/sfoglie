@@ -1,7 +1,10 @@
 function [ dV ] = FiniteDifferences( V,x, verf )
-%FINITEDIFFERENCES calculates the finite difference of a vector. Always
-%                  uses forward differences for first element and backwards differences for
-%                  last element
+%FINITEDIFFERENCES calculates the finite difference approximation of a vector. 
+%                       verf='central'  -> uses central differences 
+%                       verf='backward' -> uses backward differences 
+%                       verf='forward'  -> uses central differences 
+%                   first vector element always calculated with forward differences
+%                   last vector element always calculated with backward differencest
 
 
 if nargin==2

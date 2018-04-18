@@ -1,8 +1,8 @@
-function [ f, df_dn,df_dT,df_dD,df_dU, df_ds ] = AmplificationEquation(n,T,U,H,Ret,h  )
+function [ f, df_dn,df_dT,df_dD,df_dU, df_ds ] = AmplificationEquation(flo,n,T,U,H,Ret,h  )
 %AMPLIFICATIONEQUATION evaluates the amplification equation and calculate its derivates
 
 
-[dn,ddn_dT,ddn_dH, ddn_dRet,ddn_dn] = AmplificationDerivate(H,Ret,T, true, n );
+[dn,ddn_dT,ddn_dH, ddn_dRet,ddn_dn] = AmplificationDerivate(flo,H,Ret,T, true, n );
 
 
 f= n(2:end) - n(1:end-1) - dn.*h;

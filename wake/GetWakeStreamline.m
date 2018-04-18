@@ -10,9 +10,6 @@ function [wake] = GetWakeStreamline( fld,prf,NW )
 e1=prf.panels.e(:,1);
 eN=prf.panels.e(:,end-1);
 s=0.5*transpose(eN-e1);
-%if s(1)<0; s=-s; end;
-
-
 
 %    calculate TE midpoint as first wake node
 x1=[prf.panels.X(1,1) prf.panels.Y(1,1)]; 
@@ -22,12 +19,10 @@ xTE= (x1+xN)/2 + 0.0001*s; % Midpoint of TE
 psi0=fld.psi0;
 %psi0=evaluateInviscFieldSol(xTE,fld,prf);
 
-
 % starting step size of wake equals the Panel length of first panel
 h=0.5*( prf.panels.L(1) + prf.panels.L(prf.N-1) );
 
 grading=Grading(h,prf.c,NW);
-
 
 % guess second wake point 
 guess= xTE + h*s;
@@ -83,7 +78,7 @@ for i=1:NW-1
     if noConv || dpmin>0.008 
         % in case of divergence or to big deviation of psi0 -> try intersection method
         [xI, psiI]=Intersection(fld,prf,guess,h,psi0);
-        if abs((psiI-psi0)/psi0)<0.008 ;
+        if abs((psiI-psi0)/psi0)<0.008 
            xw(i+1,:)= xI; 
         else
            xw(i+1,:)=guess; 
@@ -123,7 +118,7 @@ wake.N=NW;
 
 
 % Trailing edge Gap
-if prf.IsSharp
+if prf.sharpTE
     wake.gap=zeros(size(wake.x));
 else
     % Calculate the dead air region behind the blunt trailing edge for downstream wakepoints
@@ -145,33 +140,5 @@ else
     wake.gap=wg;
 end
 
-% % starting y-step size
-% dy1=0.2*( prf.nodes.Y(2)-prf.nodes.Y(end-1) );
-% for i=1:NW-1 
-%     psi1= evaluateInviscFieldSol(guess,fld,prf);
-%     
-%     
-%     psi2= evaluateInviscFieldSol(guess + [0, dy1],fld,prf);
-%     
-%     dy= (psi0-psi1)/(psi2-psi1)*dy1;
-%     xw(i+1,:)=guess;
-%     
-%     res=1;k=0;
-%     while res>1e-9 && k<20 % prevent endless loop
-%         psi2= evaluateInviscFieldSol(xw(i+1,:) + [0, dy],fld,prf);
-%         dy= (psi0-psi1)/(psi2-psi1)*dy;
-%         
-%         % refresh for new iteration
-%         xw(i+1,2)= xw(i+1,2) + dy;
-%         psi1=psi2;
-%         k=k+1;
-%     end
-%     
-%     
-%     %grading=1+(grading-1)/(1+0.0002*(i-1)^2); % make grading go to 1 at end of wake
-%     guess=xw(i+1,:) + grading*(xw(i+1,:)-xw(i,:));
-%     lw(i)=norm(xw(i+1,:)-xw(i,:));
-%     sw(i+1)=sw(i) + lw(i);
-% end
 end
 

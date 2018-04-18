@@ -5,17 +5,6 @@ function p=create_panels(p)
 %              vector theta aswell as tangential vectors e and normalvectors n of each panel.
 %              first line of p.panels.X gives X-coordinates of startpoints, second line the ones of the end point
 
-
-%identify if TE is sharp or not
-if abs(p.nodes.X(1)-p.nodes.X(end))<1e-7 && abs(p.nodes.Y(1)-p.nodes.Y(end))<1e-7
-    p.IsSharp=true;
-    % make shure the Trailingedge point does exactly coincide
-    p.nodes.X(end)=p.nodes.X(1);
-    p.nodes.Y(end)=p.nodes.Y(1);
-else
-    p.IsSharp=false;
-end
-
 x1=p.nodes.X(1:end);
 x2=[p.nodes.X(2:end), p.nodes.X(1)];
 y1=p.nodes.Y(1:end);
@@ -37,7 +26,7 @@ s=[0,cumsum(L(1:end-1))];
 % angle of panel tangent vector to y- axis
 p.panels.theta=atan2(e(1,:),-e(2,:));
 
-if p.IsSharp
+if p.sharpTE
     p.SdotT=0;
     p.ScrossT=1;
     p.nodes.n=(n(:,1:end-2)+n(:,2:end-1))/2;

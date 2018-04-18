@@ -1,4 +1,4 @@
-function [ Llam, T2,D2,U2,C2, der] = Transition(sec, sol,n, T, D,U,Vb,s1,h )
+function [ Llam, T2,D2,U2,C2, der] = Transition(sec, sol,flo, eng, n, T, D,U,Vb,s1,h)
 %TRANSITION finds transition point on Intervall of transition. Splits Intervall in laminar and turbulent part
 %           and calculates the values of delta1 and delta2 for the transition point and the panels 2 point
 
@@ -26,9 +26,9 @@ k=0; res=1;
      
     D(2)=D2; T(2)=T2; C2=C2t;
     if tr % Tripping
-        [f, der, sT]=TransitionEQ( n, T, D,U,Vb,s1,h, C2, sol.sT(sec),true );
+        [f, der, sT]=TransitionEQ( flo, eng, n, T, D,U,Vb,s1,h, C2, sol.sT(sec),true );
     else
-        [f, der, sT]=TransitionEQ( n, T, D,U,Vb,s1,h, C2 );
+        [f, der, sT]=TransitionEQ( flo, eng, n, T, D,U,Vb,s1,h, C2 );
     end
     if HKset==false % no seperation occured
         

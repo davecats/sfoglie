@@ -1,6 +1,6 @@
 function erg = Gauss( A, b)
 %GAUSS Gauß-Algorithmus mit relativer Spaltenmaximumstrategie 
-%       -> betragsmäßiges maximum einer Spalte als Pivotelement
+%       -> betragsmäßiges Maximum einer Spalte als Pivotelement
 %      gibt rechte und linke Dreiecksmatrix zurück
 %      Falls rechte Seite Übergeben -> löst LGS, sonst nur LR-Zerlegung 
 
