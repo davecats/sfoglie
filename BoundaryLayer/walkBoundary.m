@@ -254,7 +254,7 @@ for i=Start:step:Ende
         sol.c(i+step)=n2;
         
         % tripping arc length in current intervall
-        if sol.Tripping(section) && prf.nodes.X(i+step)>sol.xT(section); 
+        if sol.Tripping(section) && prf.nodes.X(i+step)>sol.xT(section)
             tr=true;
             w1= (prf.nodes.X(i+step)-sol.xT(section))/ (prf.nodes.X(i+step)-prf.nodes.X(i));
             w2=1-w1;
@@ -262,7 +262,7 @@ for i=Start:step:Ende
         end
 
         % transition occures in current intervall
-        if sol.c(i+step)> nkrit || tr; 
+        if sol.c(i+step)> nkrit || tr
             lam=false;     
             
             if sol.c(i+step)>nkrit; sol.Tripping(section)=false; end

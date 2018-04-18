@@ -17,7 +17,7 @@ flo.alfa = 0*pi/180;         %  Angle of attack
 flo.invisc = false;          %  only inviscid solution 
 flo.Uinfty=1;                %  velocity of outer flow
 flo.Re= 4e5;                 %  Chord Reynoldsnumber
-flo.nkrit=  9;%           %  critical amplification exponent for transition
+flo.nkrit=  0.15;%           %  critical amplification exponent for transition
 
 %  Tripping
 %  --------
@@ -29,18 +29,13 @@ tri.x = [ 0.07;...             %  tripping location on suctoin side
     
 %  Blowing
 %  --------
-blo.active=[false;...    %  blowing on suction side  
-            false];      %  blowing on pressure side 
-
-blo.xStart= [0.25;...         %  start of blowing on suction side
-             0.25]* prf.c;    %  start of blowing on pressure side
-   
-blo.xEnd  = [0.5;...          %  end of blowing on suction side
-             0.5]* prf.c;     %  end of blowing on pressure side
-          
-blo.A=[0.001;...              %  blowing intensity suction side
-       0.001]* flo.Uinfty;    %  blowing intensity pressure side
-
+blo.active=false;                 %  activate blowing
+blo.L= {[0.1]*prf.c;              %  length of blowing area: suction side
+        [0.1]*prf.c;};            %  length of blowing area: pressure side
+blo.x= {[0.4687]*prf.c;          %  midpoint of blowing area
+        [0.1233]*prf.c;};             
+blo.A= {[0.005]*flo.Uinfty;
+        [0.005]*flo.Uinfty};
 blo.pressureCor=false;        % include correction term for pressure
 
 %  Newton Solver

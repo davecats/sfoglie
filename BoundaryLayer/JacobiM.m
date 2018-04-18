@@ -1,4 +1,4 @@
-function [ J, rhs] = JacobiM( prf,flo,eng,sol,Unew,D)
+function [ J, rhs] = JacobiM( prf,flo,blo,eng,sol,Unew,D)
 %JACOBIM        calculates the Jacobimatrix and right hand side for the Newton system 
 %               for solution vector z=[T1,..,TN, C1,.., CN,m1,..,mN]^T 
 
@@ -367,13 +367,9 @@ EQ3= 3*EQsys ;
 
 % Model for correction of the pressure Term   
 %------------------------------------------------------------------------------------------
-try
-    pressureCor=evalin('base','pressureCor');
-catch
-    pressureCor=false;
-end
+
  Blow=find(sol.Vb~=0);
- if ~isempty(Blow) && pressureCor
+ if ~isempty(Blow) && blo.pressureCor
      BlowU= Blow(Blow<prf.Nle-1);
      BlowL= Blow(Blow>prf.Nle);
      

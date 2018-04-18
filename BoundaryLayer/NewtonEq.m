@@ -1,4 +1,4 @@
-function [solnew, prf] = NewtonEq( prf,flo,eng,sol,D0,Uinv,it)
+function [solnew, prf] = NewtonEq( prf,flo,blo,eng,sol,D0,Uinv,it)
 %NEWTONEQ       sets up the global Newton equationsystem J dz=- f(z) and
 %               solves it iterativly
 %               sol:    initial solution struct
@@ -41,7 +41,7 @@ while res>eng.tol && k<it
      
      Un=Uinv + D*sol.m; % velocity solution with new source Terms
 
-    [J,rhs]=JacobiM(prf,flo,eng,sol, Un,D);
+    [J,rhs]=JacobiM(prf,flo,blo,eng,sol, Un,D);
     dz=J\rhs; % Solution of equation -> gives correction for current Newton-step
     
     dT=dz(1:Nges);

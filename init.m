@@ -4,6 +4,7 @@
 
 
 % Clean environment
+clc
 close all
 clear all
 

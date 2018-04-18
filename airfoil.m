@@ -87,42 +87,34 @@ Uinv=[UFoil; UWake];
 %  ----------------
 
 % blowing velocity vector
-Vb=zeros(size(Uinv));
+blo.Vb=zeros(size(Uinv));
 % get nodes with blowing and set the blowing velocity vector
-if blo.active(1)
-    indB1= find( xU < xBend(1) & xU > xBstart(1));
-    Vb(indB1)=intensity(1);
-end
-if blo.active(2)
-    indB2= find( xL < xBend(2) & xL > xBstart(2));
-    indB2= indB2 + (prf.Nle-1)*ones(size(indB2));
-    Vb(indB2)=intensity(2);
-end
+blo=addBlowing(blo,prf);
 % initial solution guess
-sol = GetInitialSolution( prf,flo, tri, eng, Uinv, Vb, 2); ini=sol;
+sol = GetInitialSolution( prf,flo, tri, eng, Uinv, blo.Vb, 2);
 %  coupled boundary layer and potential flow solution
-[sol, prf]=NewtonEq( prf,flo,eng,sol,D,Uinv,eng.it);
+[sol, prf]=NewtonEq( prf,flo,blo,eng,sol,D,Uinv,eng.it);
 % If no convergence -> try with different approach for Transition panel EQ
 if sol.residual>eng.tol
     eng.tranEQ=true;
     disp('Not converged, Try different Transition approach ')
     disp('------------------------------------------------ ')
-    [sol, prf]=NewtonEq( prf,flo,eng,sol,D,Uinv, eng.it );
+    [sol, prf]=NewtonEq( prf,flo,blo,eng,sol,D,Uinv, eng.it );
 end
 
-%% Plots 
-
-figure 
-hold on
-plot(prf.nodes.X(1:prf.N), sol.Cp(1:prf.N) ,'g')
-title('Pressure coefficient')
-ylabel(' C_p ') 
-xlabel(' x ')
-
-
-figure 
-hold on
-plot(prf.nodes.X(1:prf.N), sol.Cf(1:prf.N) ,'g')
-title('Pressure coefficient')
-ylabel(' C_f ') 
-xlabel(' x ')
+% %% Plots 
+% 
+% figure 
+% hold on
+% plot(prf.nodes.X(1:prf.N), sol.Cp(1:prf.N) ,'g')
+% title('Pressure coefficient')
+% ylabel(' C_p ') 
+% xlabel(' x ')
+% 
+% 
+% figure 
+% hold on
+% plot(prf.nodes.X(1:prf.N), sol.Cf(1:prf.N) ,'g')
+% title('Friction coefficient')
+% ylabel(' C_f ') 
+% xlabel(' x ')
