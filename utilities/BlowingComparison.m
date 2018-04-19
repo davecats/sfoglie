@@ -1,4 +1,4 @@
-function [ ] = BlowingComparison(prf,wake,sol,prfB,solB,mode)
+function [Tab ] = BlowingComparison(prf,wake,sol,prfB,solB,mode)
 %BLOWINGCOMPARISON gives Plots of Comparison between blowing case and case without blowing
 %                  mode=1: only gives overview plot (default)
 %                  mode=2: gives comparison plots for suction side 
@@ -15,6 +15,7 @@ Cd_red=  (solB.Cdrag-sol.Cdrag)/sol.Cdrag ;
 Cnu_red=  (solB.Cnu-sol.Cnu)/sol.Cnu ;
 CL_red=  (solB.CL-sol.CL)/sol.CL ;
 
+
 ratio_red= (solB.CL/solB.Cdrag - sol.CL/sol.Cdrag)*sol.Cdrag/sol.CL;
 
 str={['\Delta C_L=',num2str(100*CL_red),'%'],['\Delta C_d=',num2str(100*Cd_red),'%'],['\Delta C_\nu=',num2str(100*Cnu_red),'%'],['\Delta C_L/C_d=',num2str(100*ratio_red),'%']};
@@ -27,13 +28,35 @@ lls=0.03*prf.c;
 endU= xUtr - lls*prf.panels.n(:,sol.iTran(1));
 endL= xLtr - lls*prf.panels.n(:,sol.iTran(2)-1);
 
-PlotProfile( prfB,wake,solB, 4) 
+fig1=PlotProfile( prfB,wake,solB, 4) ;
 line([xUtr(1) endU(1)]  , [xUtr(2) endU(2)],'color','k','Linewidth',0.7);
 line([xLtr(1) endL(1)]  , [xLtr(2) endL(2)],'color','k','Linewidth',0.7);
 
 text(0.4*prf.c, 0.28*prf.c, str);
 
 
+colHead={'c_a','c_w','c_wR','ratio'};
+rowHead={'No Blow','Blow','rel. change [%]'};
+
+
+
+
+ TT= [sol.CL , sol.Cdrag , sol.Cnu ,solB.CL/solB.Cdrag;...
+      solB.CL, solB.Cdrag, solB.Cnu,sol.CL/sol.Cdrag  ;...
+      round(CL_red*100,2), round(Cd_red*100,2),round(Cnu_red*100,2),round(ratio_red*100,2)];
+
+  
+  
+  disp(['Parameters: ',])
+  
+  
+Tab=table(TT(:,1),TT(:,2),TT(:,3),TT(:,4),'RowNames',rowHead,'VariableNames',colHead)
+
+
+% Tab=uitable;
+% Tab.Data=TT;
+% Tab.ColumnName=colHead;
+% Tab.RowName=rowHead;
 
 if mode==1; return; end
 

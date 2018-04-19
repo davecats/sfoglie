@@ -221,7 +221,7 @@ for i=Start:step:Ende
 %------------------------------------------------- Update panel point 2 solution -------------------------------------       
     % For to big residuals -> extrapolate solution
     if res>0.1 
-        disp(['not konverged->solution extrapolated, node: ' num2str(i+step) ', residuum: ' num2str(res)] );
+        disp(['Initial Solution: not konverged-> extrapolate value, node: ' num2str(i+step) ', residual: ' num2str(res)] );
         if IsWake
             T2=T1; 
             tmp=(s(i-prf.N+step)-s(i-prf.N))/(10*D1);

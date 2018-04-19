@@ -17,23 +17,23 @@ set(groot, 'defaultAxesTickLabelInterpreter','LaTex'); set(groot, 'defaultLegend
 %%
 %  air foil geometry and flow Parameters
 %------------------------------------------------------------------------------
-
+% BlowingComparison(prfE,flo.wake,sol,prfB,solB,1);
 %  prf and panels
 %  ------------------
 prf.naca = [4 4 1 2];         %  NACA 4-digit prf 
 prf.noSkew  = true;          %  if true neglects prf skewness
 prf.sharpTE = false;          %  if true modifies NACA prf for shart trailing edge
 prf.c = 1;                    %  prf chord length 
-prf.M = 90;                   %  number of control points for each surface
+prf.M = 90;                  %  number of control points for each surface
 prf.pmode = 1;                %  node distribution mode: 1 (more nodes in middle) 2 (more nodes at LE and TE)
 
 %  Flow
 %  ----
-flo.alfa = 5*pi/180;         %  Angle of attack 
+flo.alfa = 0*pi/180;         %  Angle of attack 
 flo.invisc = false;          %  only inviscid solution 
 flo.Uinfty=1;                %  velocity of outer flow
-flo.Re= 1e5;                 %  Chord Reynoldsnumber
-flo.nkrit=  0.145;%          %  critical amplification exponent for transition
+flo.Re= 4e5;                 %  Chord Reynoldsnumber
+flo.nkrit=  0.15;%          %  critical amplification exponent for transition
 
 %  Tripping
 %  --------
@@ -50,20 +50,20 @@ withBlowing=[true;...  % blowing on suction side
 % blowing region
 % startpoint    
 xBstart= [0.25;...
-          0.25]* prf.c;
+          0.9]* prf.c;
 % end point     
-xBend  = [0.86;...
-          0.5]* prf.c;
+xBend  = [0.5;...
+          1]* prf.c;
       
 % blowing intensity      
-intensity=[0.001;...
-           0.001]* flo.Uinfty;
+intensity=[0.005;...
+           0.005]* flo.Uinfty;
 
-pressureCor=false;% true; % include correction Term for pressure
+pressureCor=false;%true; %  include correction Term for pressure
 
 %  Newton Solver
 %  --------------
-eng.it=20;                   % maximum number of Newton step iterations
+eng.it=25;                   % maximum number of Newton step iterations
 eng.tranEQ=false;            % false) xfoil transition EW, true) modified transition EQ
 eng.tol=5e-4;                % tolerance of Newton method
 
@@ -138,13 +138,6 @@ end
 % done by integrating the streamline throug the TE of inviscid solution
 flo.wake=GetWakeStreamline(flo,prf,eng.NW);
 
-
-% %Plot wake
-% figure(); 
-% hold on; box on;
-% plot([prf.panels.X]',[prf.panels.Y]','k','Linewidth',2);
-% plot(flo.wake.x,flo.wake.y,'b');
-% axis equal; xlabel('x'); ylabel('y')
 
 % Plot profile and wake
 if flo.invisc
@@ -272,6 +265,11 @@ end
 %   with blowing
 %----------------------------------------------
 
+
+% tri.active=[ true; true];  
+% tri.x=sol.tran.x;
+% flo.nkrit=  9;% 
+
 if ~withBlowing(1) && ~withBlowing(2); return; end
 
 disp('With Blowing')
@@ -296,7 +294,7 @@ iniB = GetInitialSolution( prf,flo, tri, eng, Uinv, Vb, 2);
 [solB, prfB]=NewtonEq( prf,flo,eng,iniB,D,Uinv,eng.it,pressureCor);
 
 % If no convergence -> try with different approach for Transition panel EQ
-if sol.residual>eng.tol
+if solB.residual>eng.tol
     eng.tranEQ=true;
     disp('Not converged, Try different Transition approach ')
     disp('------------------------------------------------ ')

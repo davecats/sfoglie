@@ -75,6 +75,7 @@ else
        sT=s1 + hL;
     else % switch to sekant Method
 %------------------------------------------------------------------
+
         hL=sT-s1;hLmin=hL;
         n1=n(1);n2=n(2);
         h1=0;h2=h;

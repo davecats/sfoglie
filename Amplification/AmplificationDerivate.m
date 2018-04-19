@@ -4,6 +4,7 @@ function [dn,ddn_dT,ddn_dH, ddn_dRet,ddn_dn] = AmplificationDerivate(flo,H,Ret,T
 
 nkrit=flo.nkrit;
 
+
 if nargin==5
     getDerivates=false;
 end
@@ -49,6 +50,8 @@ if getDerivates==false || nargin==5
     n=A;
     %n=zeros(size(A));
 end
+% make shure values are not negativ
+n(n<0)=0;
 
 ARG2=min(20*(nkrit - 0.5*(n(1:end-1)+n(2:end) )) , 20);
 EXN=ones(dim);

@@ -13,7 +13,6 @@ Href=H2;
 U2=U(2);
 Uref=U2;
 
-
 s2=s1 + h;
 if sol.Tripping(sec)
     tr=true; 

@@ -186,8 +186,13 @@ if prf.sharpTE
    solnew.Cp(prf.N)=solnew.Cp(1); 
 end
 
-
-
+% find seperation points
+% suctionside
+[solnew.xseparation(1), solnew.xreattach(1)]=FindSeparationLoc( prf.nodes.X(prf.Nle-1:-1:1),solnew.HK(prf.Nle-1:-1:1),...
+                                                                                            prf.Nle-solnew.iTran(1), 3.8,2.5 );
+%pressure side
+[solnew.xseparation(2), solnew.xreattach(2)]=FindSeparationLoc( prf.nodes.X(prf.Nle:prf.N),solnew.HK(prf.Nle:prf.N),...
+                                                                                           solnew.iTran(2)-prf.Nle+1, 3.8,2.5 );
 
 
 % Write out
@@ -210,6 +215,8 @@ disp(' ')
     [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N-1),solnew.tau(1:prf.N-1),prf.s(1:prf.N-1),prf.nodes.e(:,1:prf.N-1)',...
                                          prf.nodes.n(:,1:prf.N-1)', flo.alfa, true,solnew.Vb/flo.Uinfty);
  else
+%     [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N),solnew.tau(1:prf.N),prf.s,...
+%                                                 prf.nodes.e',prf.nodes.n',flo.alfa, true,solnew.Vb/flo.Uinfty);
     %include TE Panel contribution
     [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N+1),solnew.tau(1:prf.N+1),[prf.s,prf.s(end)+prf.panels.L(end)],...
                                                 [prf.nodes.e,prf.panels.e(:,end)]',[prf.nodes.n,prf.panels.n(:,end)]',...

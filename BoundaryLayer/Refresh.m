@@ -3,6 +3,7 @@ function sol= Refresh(prf,flo,sol,eng)
 %        find the new transition point and force a certain H-U-correlation for the
 %        seperation region
 
+
 nkrit=flo.nkrit;
 nu=flo.nu;
 
@@ -211,8 +212,10 @@ for section=1:3
         end
 
         if lam % ----------- Transition
+            
             n2 = AmplSol(flo,sol.c(i),[sol.T(i);T2],[sol.U(i);U2], [sol.HK(i); D2/T2],[sol.Ret(i); T2*U2/nu], Lges(i-shift) );
             sol.c(i+step)=n2;
+            
             
              % tripping arc length in current intervall
             if sol.Tripping(section) && prf.nodes.X(i+step)>sol.xT(section);

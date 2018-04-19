@@ -6,6 +6,12 @@ parameters
 CL_ref=sol.CL; CD_ref=sol.Cdrag; tr_ref=sol.tran.x;
 
 
+return
+
+
+
+%
+%
 
 % N=20;
 % xTop=linspace(-0.05,1.05,N);
@@ -28,6 +34,52 @@ CL_ref=sol.CL; CD_ref=sol.Cdrag; tr_ref=sol.tran.x;
 % contourf(xTop,xBot,(real(CL(:,:))./CD)'/(CL_ref/CD_ref))
 % xlabel('x_M^{TOP}')
 % ylabel('x_M^{BOTTOM}')
+
+
+
+
+%       Polarcurve
+
+% loop over alfas + write out   for CL over alfa plots
+step=1;
+for k=0:step:16
+
+    flo.alfa= step *pi/180;
+    aTMP=round(flo.alfa*180/pi,1);
+    disp(['ALFA=',num2str(aTMP)])
+    disp('--------------------------------------------')
+    
+    
+    % evaluation
+    [sol,prf,flo,~,~,~]=airfoil(prf,flo,tri,blo,eng);
+
+    if k==0
+        CP=sol.Cp(1:prf.N);
+        TAU=sol.tau(1:prf.N);
+        CL   =sol.CL ;
+        Cnu  =sol.Cnu;
+        Cdrag=sol.Cdrag;
+        alph=aTMP;
+        
+        xTT= [sol.tran.x(1), sol.xseparation(1), sol.xreattach(1) ];
+        
+        TST= DragCoeff(sol.T(end),sol.HK(end),sol.U(end),1);
+    else
+        CP=[CP,sol.Cp(1:prf.N)];
+        TAU=[TAU,sol.tau(1:prf.N)];
+        CL=[CL;sol.CL];
+        Cnu=[Cnu;sol.Cnu];
+        Cdrag=[Cdrag;sol.Cdrag];
+        alph=[alph;aTMP];
+        
+        xTT=[xTT;sol.tran.x(1), sol.xseparation(1), sol.xreattach(1) ];
+        
+        TST=[TST; DragCoeff(sol.T(end),sol.HK(end),sol.U(end),1)];
+    end
+
+end
+
+
 
 
 % %%

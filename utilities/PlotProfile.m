@@ -1,4 +1,4 @@
-function [  ] = PlotProfile( prf,wake,sol, mode) 
+function [fig] = PlotProfile( prf,wake,sol, mode) 
 %PLOTPROFIL  mode=1: Plots the profile and wake with thicked shape due to displacement
 %            mode=2: Plots the profile and wake with node positions
 %            mode=3: Plots Profile with Transitionpoints and blowing distribution   
@@ -39,7 +39,7 @@ if mode==1
     tmp=round(prf.alfa*180/pi);
     str={['\alpha=',num2str(tmp),' degree'],['Re=',num2str(Re)],['C_L=',num2str(sol.CL)],['C_d=',num2str(sol.Cdrag)],['C_\nu=',num2str(sol.Cnu)],['C_L/C_d=',num2str(sol.CL/sol.Cdrag)] };
 
-    figure; 
+    fig=figure; 
     hold on; box on;
     plot([prf.panels.X],[prf.panels.Y],'k','Linewidth',1.5);
     plot(wake.x,wake.y,'k','Linewidth',1.2);
@@ -71,7 +71,7 @@ elseif  mode ==2
     
     str={['N=',num2str(prf.N)],['N_w=',num2str(wake.N)]};
     
-    figure; 
+    fig=figure; 
     hold on; box on;
     plot(x,y,'k','Linewidth',1);
     for i=1:length(PP)
@@ -93,7 +93,7 @@ elseif mode==3 || mode==4
          ['suction side  : x/c=',num2str(round(xUtr(1),3)), '  y/c=',num2str(round(xUtr(2),3))]...
          ['pressure side: x/c=',num2str(round(xLtr(1),3)), '  y/c=',num2str(round(xLtr(2),3))]};
        
-    figure; 
+    fig=figure; 
     hold on; box on;
     l1=line([xUtr(1) endU(1)]  , [xUtr(2) endU(2)],'color','r','Linewidth',0.7);
     line([xLtr(1) endL(1)]  , [xLtr(2) endL(2)],'color','r','Linewidth',0.7);
@@ -104,7 +104,9 @@ elseif mode==3 || mode==4
         Faktor= 0.02*prf.c/max(sol.Vb(1:prf.N));
         vb= [prf.nodes.X;prf.nodes.Y] - Faktor*([1;1]*sol.Vb(1:prf.N)' ).*prf.nodes.n;
         l2=plot(vb(1,:),vb(2,:),'b');
-        legend([l1 l2],{'transition point','blowing velocity'},'location','northwest')
+        legendE1='TP';
+        if mode==4; legendE1=[legendE1,' blowing case']; end
+        legend([l1 l2],{legendE1,'blowing velocity'},'location','northwest')
         vTT=vb(:,ind);
         for i=1:length(vTT(1,:))
             line([prf.nodes.X(ind(i)) vTT(1,i)]  , [prf.nodes.Y(ind(i)) vTT(2,i)],'color','b');

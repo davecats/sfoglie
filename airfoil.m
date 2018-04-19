@@ -15,9 +15,11 @@ flo.vi = flo.Uinfty*sin(flo.alfa);
 
 % Calculate NACA profile nodes
 prf = naca4(prf);
-%   data=load('e387.txt');
-%   profile.nodes.X=transpose(data(:,1));profile.nodes.Y=transpose(data(:,2));
-%   profile.N=length(data(:,1)); clear data
+
+% % import profile Nodes
+% data=load('e387TST.txt');
+% prf.nodes.X=transpose(data(:,1));prf.nodes.Y=transpose(data(:,2));
+% prf.N=length(data(:,1)); clear data
 
 
 % create the panels

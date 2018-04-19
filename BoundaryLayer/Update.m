@@ -158,6 +158,8 @@ solnew.T(ind)=sol.T(ind);
 solnew.HK(ind)=sol.HK(ind);
 solnew.Ret(ind)=sol.Ret(ind);
 
+ind=find(solnew.c<0);
+solnew.c(ind)=sol.c(ind);
 end
 
 
