@@ -38,20 +38,14 @@ text(0.4*prf.c, 0.28*prf.c, str);
 colHead={'c_a','c_w','c_wR','ratio'};
 rowHead={'No Blow','Blow','rel. change [%]'};
 
-
-
-
- TT= [sol.CL , sol.Cdrag , sol.Cnu ,solB.CL/solB.Cdrag;...
-      solB.CL, solB.Cdrag, solB.Cnu,sol.CL/sol.Cdrag  ;...
+ TT= [sol.CL , sol.Cdrag , sol.Cnu ,sol.CL/sol.Cdrag;...
+      solB.CL, solB.Cdrag, solB.Cnu,solB.CL/solB.Cdrag  ;...
       round(CL_red*100,2), round(Cd_red*100,2),round(Cnu_red*100,2),round(ratio_red*100,2)];
 
   
   
-  disp(['Parameters: ',])
-  
   
 Tab=table(TT(:,1),TT(:,2),TT(:,3),TT(:,4),'RowNames',rowHead,'VariableNames',colHead)
-
 
 % Tab=uitable;
 % Tab.Data=TT;

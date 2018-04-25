@@ -119,6 +119,7 @@ solnew.Ret=abs(solnew.U).*solnew.T/nu;
 solnew.tran=sol.tran;
 solnew.iTran=sol.iTran;
 solnew.Vb=sol.Vb;
+solnew.pressureTerm=sol.pressureTerm;
 solnew.Tripping=sol.Tripping;
 solnew.sT=sol.sT;
 solnew.xT=sol.xT;

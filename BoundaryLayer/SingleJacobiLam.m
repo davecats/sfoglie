@@ -1,4 +1,4 @@
-function [ f1,f2,df_dT,df_dD ,df_dU, df_dh] = SingleJacobiLam( T,U,Vb,H,Ret,h,s1,diffU,nu)
+function [ f1,f2,df_dT,df_dD ,df_dU, df_dh] = SingleJacobiLam( T,U,Vb,H,Ret,h,s1,diffU,nu,pressureTerm)
 %SINGLEJACOBILAM    calculates the funtcionvalue and the derivates for Newton method
 %                   of the momentum EQ and the shape parameter EQ in laminar case of known "1" values
 %       Variables:  DI: displacementthicknes
@@ -10,6 +10,10 @@ function [ f1,f2,df_dT,df_dD ,df_dU, df_dh] = SingleJacobiLam( T,U,Vb,H,Ret,h,s1
 %                   diffU:  true returns also derivates of U
 
 
+if nargin==9
+    pressureTerm=zeros(size(Vb));
+end
+pTM=0.5*(pressureTerm(1:end-1) + pressureTerm(2:end)) ;
 
 N=length(T); 
 
@@ -99,21 +103,21 @@ slog  = log(s2./s1); % substitute h= log(s2/s1) * sM
 
 
 % momentum equation -> right hand side of Newton System
-f1= Tlog + (HM + 2 ).*Ulog - slog.*CFX - h.*VbM./(UM.*TM);
+f1= Tlog + (HM + 2 ).*Ulog - slog.*CFX - h.*VbM./(UM.*TM) - h.*pTM./(UM.^2.*TM);
 
 
 % ------- derivates of momentum equation ------
 % momentum thickness T
-df1_dT2 = 1./T2 + 0.5*dH_dT(2:end).*Ulog - slog.*dCFX_dT2 + 0.5*h.* VbM./(UM.*TM.^2);
+df1_dT2 = 1./T2 + 0.5*dH_dT(2:end).*Ulog - slog.*dCFX_dT2 + 0.5*h.* VbM./(UM.*TM.^2) + 0.5*h.* pTM./(UM.^2.*TM.^2);
 % displacement thickness DI
 df1_dD2 =       + 0.5*dH_dD(2:end).*Ulog - slog.*dCFX_dD2 ;
 % Boundary layer edge velocity U
 if diffU
-    df1_dU2 =  (HM + 2 )./U(2:end) - slog.*dCFX_dU2 + 0.5*h.*VbM./(UM.^2.*TM );
+    df1_dU2 =  (HM + 2 )./U(2:end) - slog.*dCFX_dU2 + 0.5*h.*VbM./(UM.^2.*TM ) + h.*pTM./(UM.^3.*TM );
 end
 % panel length (only for Transition panel)
 %df1_dh=(CfM + VbM./UM)./TM;
-df1_dh=-1./s2.*CFX -slog.*dCFX_ds2 + (CfM + VbM./UM)./TM;
+df1_dh=-1./s2.*CFX -slog.*dCFX_ds2 - (VbM./UM)./TM - pTM./(UM.^2.*TM);
 
 %-------------------------------------------------------------------------
 

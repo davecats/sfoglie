@@ -29,28 +29,24 @@ if nargin==7
 end
 Blow=find(sol.Vb~=0);
 
+sol.pressureTerm=zeros(size(sol.Vb));
 if ~isempty(Blow) && pressureCor
      BlowU= Blow(Blow<prf.Nle-1);
      BlowL= Blow(Blow>prf.Nle);
-     
-     pressureTerm=zeros(size(sol.Vb));
+        
      if ~isempty(BlowU)
         sU_b=prf.sU(BlowU);
-        PrU = PressureCorrect(sU_b(end),sU_b(1),prf.sU(end:-1:1)',sol.Vb(prf.Nle-1:-1:1),sol.U(prf.Nle-1:-1:1));
+        PrU = PressureCorrect(sU_b(end),sU_b(1),prf.sU(end:-1:1)',sol.Vb(prf.Nle-1:-1:1),sol.U(prf.Nle-1:-1:1),sol.D(prf.Nle-1:-1:1));
         PrU=PrU(end:-1:1);
-        pressureTerm(1:prf.Nle-1)=PrU;
+        sol.pressureTerm(1:prf.Nle-1)=PrU;
      end
      if ~isempty(BlowL)
         sL_b=prf.sL(BlowL-prf.Nle+1);
-        PrL = PressureCorrect(sL_b(1),sL_b(end),prf.sL',sol.Vb(prf.Nle:prf.N),sol.U(prf.Nle:prf.N));
-        pressureTerm(prf.Nle:prf.N)=PrL;
+        PrL = PressureCorrect(sL_b(1),sL_b(end),prf.sL',sol.Vb(prf.Nle:prf.N),sol.U(prf.Nle:prf.N),sol.D(prf.Nle:prf.N));
+        sol.pressureTerm(prf.Nle:prf.N)=PrL;
      end
-     % add effect of pressure Term to Vb     
-     Vb_base=sol.Vb;
-     sol.Vb=sol.Vb - pressureTerm;
 end
 %------------------------------------------------------------------------------------------
-
 
 
 %xtrr=zeros(it,2);
@@ -143,11 +139,8 @@ solnew.residual=res;
 % ylabel('x_tran')
 % legend('suction','pressure')
 
-if ~isempty(Blow) && pressureCor
-    % substract effect of pressure to get Normal vb Term   
-     solnew.Vb=Vb_base;
-     solnew.pressureTerm=pressureTerm;
-end
+
+
 
 
 % final values
@@ -197,15 +190,15 @@ end
 
 % Write out
 disp(' ')
-if solnew.Tripping(1); 
+if solnew.Tripping(1) && solnew.tran.x(1)>=solnew.xT(1)-1e-6; 
     disp(['suction side: forced transition at x/c=',num2str(solnew.xT(1))]);
 else
     disp(['suction side: free transition at x/c=',num2str(solnew.tran.x(1))]);
 end
-if solnew.Tripping(2); 
-    disp(['suction side: forced transition at x/c=',num2str(solnew.xT(2))]);
+if solnew.Tripping(2) && solnew.tran.x(2)>=solnew.xT(2)-1e-6;  
+    disp(['pressure side: forced transition at x/c=',num2str(solnew.xT(2))]);
 else
-    disp(['suction side: free transition at x/c=',num2str(solnew.tran.x(2))]);
+    disp(['pressure side: free transition at x/c=',num2str(solnew.tran.x(2))]);
 end
 disp(' ')
 

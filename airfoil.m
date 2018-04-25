@@ -15,11 +15,11 @@ flo.vi = flo.Uinfty*sin(flo.alfa);
 
 % Calculate NACA profile nodes
 prf = naca4(prf);
-
-% % import profile Nodes
-% data=load('e387TST.txt');
+% import profile Nodes
+% data=load('e387_N160.txt');
 % prf.nodes.X=transpose(data(:,1));prf.nodes.Y=transpose(data(:,2));
 % prf.N=length(data(:,1)); clear data
+
 
 
 % create the panels
@@ -105,7 +105,11 @@ if sol.residual>eng.tol
     eng.tranEQ=true;
     disp('Not converged, Try different Transition approach ')
     disp('------------------------------------------------ ')
-    [sol, prf]=NewtonEq( prf,flo,eng,sol,D,Uinv, eng.it );
+    [soln, prfn]=NewtonEq( prf,flo,eng,sol,D,Uinv, eng.it );
+    if soln.residual<sol.residual
+       sol=soln; prf=prfn; 
+    end
+    clear soln prfn
 end
 
 

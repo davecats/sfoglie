@@ -1,4 +1,4 @@
-function [ f1,f2,der] = JacobiLam( T,U,Vb,H,Ret,h,s1,nu)
+function [ f1,f2,der] = JacobiLam( T,U,Vb,H,Ret,h,s1,nu,pressureTerm)
 %JACOBILAM          calculates the funtcion value and the derivates for Newton method
 %                   of the momentum EQ and the shape parameter EQ in
 %                   laminar case for start and end point of each intervall
@@ -7,10 +7,13 @@ function [ f1,f2,der] = JacobiLam( T,U,Vb,H,Ret,h,s1,nu)
 %                   Vb: normal velocity (uniform blowing)
 %                   H : shape parameter H12
 %                   h : Vector with discretisation stepsize
-
+%                   pressureTerm: correction of pressure only in momentum eq
 
 N=length(T); 
-
+if nargin==8
+    pressureTerm=zeros(size(Vb));
+end
+pTM=0.5*(pressureTerm(1:end-1) + pressureTerm(2:end)) ;
 
 s2=s1+h;
 sM=0.5*(s2+s1);
@@ -104,24 +107,24 @@ slog  = log(s2./s1); % substitute h= log(s2/s1) * sM
 
 
 % momentum equation -> right hand side of Newton System
-f1= Tlog + (HM + 2 ).*Ulog - slog.*CFX - h.*VbM./(UM.*TM);
+f1= Tlog + (HM + 2 ).*Ulog - slog.*CFX - h.*VbM./(UM.*TM) - h.*pTM./(UM.^2.*TM);
 
 
 % ------- derivates of momentum equation ------
 % momentum thickness T
-df1_dT2 =  1./T2 + 0.5*dH_dT(2:end  ).*Ulog - slog.*dCFX_dT2 + 0.5*h.* VbM./(UM.*TM.^2);
-df1_dT1 = -1./T1 + 0.5*dH_dT(1:end-1).*Ulog - slog.*dCFX_dT1 + 0.5*h.* VbM./(UM.*TM.^2);
+df1_dT2 =  1./T2 + 0.5*dH_dT(2:end  ).*Ulog - slog.*dCFX_dT2 + 0.5*h.* VbM./(UM.*TM.^2) + 0.5*h.* pTM./(UM.^2.*TM.^2);
+df1_dT1 = -1./T1 + 0.5*dH_dT(1:end-1).*Ulog - slog.*dCFX_dT1 + 0.5*h.* VbM./(UM.*TM.^2) + 0.5*h.* pTM./(UM.^2.*TM.^2);
 
 % displacement thickness DI
 df1_dD2 =                  0.5*dH_dD(2:end  ).*Ulog - slog.*dCFX_dD2 ;
 df1_dD1 =                  0.5*dH_dD(1:end-1).*Ulog - slog.*dCFX_dD1 ;
 
 % Boundary layer edge velocity U
-df1_dU2 =   (HM + 2 )./U(2:end  ) - slog.*dCFX_dU2 + 0.5*h.*VbM./(UM.^2.*TM );
-df1_dU1 =  -(HM + 2 )./U(1:end-1) - slog.*dCFX_dU1 + 0.5*h.*VbM./(UM.^2.*TM );
+df1_dU2 =   (HM + 2 )./U(2:end  ) - slog.*dCFX_dU2 + 0.5*h.*VbM./(UM.^2.*TM ) + h.*pTM./(UM.^3.*TM );
+df1_dU1 =  -(HM + 2 )./U(1:end-1) - slog.*dCFX_dU1 + 0.5*h.*VbM./(UM.^2.*TM ) + h.*pTM./(UM.^3.*TM );
 % arc length s
-df1_ds2=-CFX./s2 - slog.*dCFX_ds2 - VbM./(UM.*TM);
-df1_ds1= CFX./s1 - slog.*dCFX_ds1 + VbM./(UM.*TM);
+df1_ds2=-CFX./s2 - slog.*dCFX_ds2 - VbM./(UM.*TM) - pTM./(UM.^2.*TM);
+df1_ds1= CFX./s1 - slog.*dCFX_ds1 + VbM./(UM.*TM) + pTM./(UM.^2.*TM);
 
 
 %-------------------------------------------------------------------------

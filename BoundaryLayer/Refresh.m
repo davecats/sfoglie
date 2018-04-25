@@ -100,7 +100,7 @@ for section=1:3
             Ret=U.*T/nu;
             
             if lam     
-                [ f1,f2,df_dT,df_dD,df_dU ] = SingleJacobiLam(T,U, sol.Vb(ind),H,Ret,Lges(i-shift),sBL(i),true,nu); 
+                [ f1,f2,df_dT,df_dD,df_dU ] = SingleJacobiLam(T,U, sol.Vb(ind),H,Ret,Lges(i-shift),sBL(i),true,nu,sol.pressureTerm(ind)); 
                 
                 % calculate changes in U for the bigger shape parameter H + 1 where the equation is still fullfilled
                 J=[df_dT, df_dD, df_dU; -H2./T2, 1./T2 ,0];
@@ -135,7 +135,7 @@ for section=1:3
             else % ---------------- turbulent -----------------
                 
                 [ f1,f2,f3,df_dT,df_dD,df_Ct,df_dU] = ...
-                    SingleJacobiTurb(D,T,[sol.c(i);C2],U, sol.Vb(ind),H,Ret,Lges(i-shift),sBL(i),true,Isflo.wake,gap(ind),nu);
+                    SingleJacobiTurb(D,T,[sol.c(i);C2],U, sol.Vb(ind),H,Ret,Lges(i-shift),sBL(i),true,Isflo.wake,gap(ind),nu,sol.pressureTerm(ind));
 
                 J=[df_dT, df_dD, df_Ct,df_dU; -H2./T2, 1./T2,0,0];
                 rhs=[-f1;-f2;-f3; 1];
@@ -218,7 +218,7 @@ for section=1:3
             
             
              % tripping arc length in current intervall
-            if sol.Tripping(section) && prf.nodes.X(i+step)>sol.xT(section);
+            if sol.Tripping(section) && prf.nodes.X(i+step)>sol.xT(section) && prf.nodes.X(i)<sol.xT(section);
                 tr=true;
                 w1= (prf.nodes.X(i+step)-sol.xT(section))/ (prf.nodes.X(i+step)-prf.nodes.X(i));
                 w2=1-w1;
@@ -228,12 +228,22 @@ for section=1:3
 
             % transition occures in current intervall
             if sol.c(i+step)>nkrit || tr; 
-                % set Tripping false if free Transition occurs earlier
-                if sol.c(i+step)>nkrit; sol.Tripping(section)=false; end 
+                
+                % free transition before tripping
+                if ~tr && sol.Tripping(section)
+                    sol.Tripping(section)=false; % set tripping false for transition EQ
+                    before=true;
+                else
+                    before=false;
+                end 
                 
                 lam=false;  
                 % solve the Equations for Transition panel 
                 [ tran,T2,D2,U2,C1,~ ] = RefreshTransition(section, flo,eng,sol,sol.c(ind), sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),sBL(i),Lges(i-shift),C2 );
+               
+                
+                if before; sol.Tripping(section)=true; end % make sure tripping location is still checked
+                
                 %----------
                 % write transition node values
                 sol.iTran(section)=i+step;

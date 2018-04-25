@@ -1,4 +1,4 @@
-function [ f1,f2,f3,der ] = JacobiTurb( DI, T,Ct,U,Vb,H,Ret,h,s1,IsWake,Wgap,nu)
+function [ f1,f2,f3,der ] = JacobiTurb( DI, T,Ct,U,Vb,H,Ret,h,s1,IsWake,Wgap,nu,pressureTerm)
 %SINGLEJACOBITURB   calculates the funtcion value and the derivates for Newton method
 %                   of the momentum EQ and the shape parameter EQ in turbulent case  for start and end point of each intervall
 %       Variables:  DI: displacement thickness
@@ -15,6 +15,11 @@ N=length(T);
 dimPl=size(T);
 dimMi=size(h);
 
+if nargin==12
+    pressureTerm=zeros(size(Vb));
+end
+pTM=0.5*(pressureTerm(1:end-1) + pressureTerm(2:end)) ;
+    
 if ~IsWake ; Wgap=zeros(size(U)); end
 
 s2=s1+h;
@@ -164,28 +169,28 @@ slog  = log(s2./s1); % substitute h= log(s2/s1) * sM
 
 
 % momentum equation -> right hand side of Newton System
-f1= Tlog + (HM + HWM + 2 ).*Ulog - slog.*CFX - h.*VbM./(UM.*TM);
+f1= Tlog + (HM + HWM + 2 ).*Ulog - slog.*CFX - h.*VbM./(UM.*TM) - h.*pTM./(UM.^2.*TM);
 
 
 % ------- derivates of momentum equation ------
 % momentum thickness T
-df1_dT2 =  1./T2 + (0.5*dH_dT(2:end  ) + dHWM_dT(2:end  )).*Ulog - slog.*dCFX_dT2 + 0.5*h.* VbM./(UM.*TM.^2);
-df1_dT1 = -1./T1 + (0.5*dH_dT(1:end-1) + dHWM_dT(1:end-1)).*Ulog - slog.*dCFX_dT1 + 0.5*h.* VbM./(UM.*TM.^2);
+df1_dT2 =  1./T2 + (0.5*dH_dT(2:end  ) + dHWM_dT(2:end  )).*Ulog - slog.*dCFX_dT2 + 0.5*h.* VbM./(UM.*TM.^2) + 0.5*h.* pTM./(UM.^2.*TM.^2);
+df1_dT1 = -1./T1 + (0.5*dH_dT(1:end-1) + dHWM_dT(1:end-1)).*Ulog - slog.*dCFX_dT1 + 0.5*h.* VbM./(UM.*TM.^2) + 0.5*h.* pTM./(UM.^2.*TM.^2);
 
 % displacement thickness DI
 df1_dD2 =           0.5*dH_dD(2:end  ).*Ulog                     - slog.*dCFX_dD2 ;
 df1_dD1 =           0.5*dH_dD(1:end-1).*Ulog                     - slog.*dCFX_dD1 ;
 
 % Boundary layer edge velocity U
-df1_dU2 =   (HM + 2 + HWM)./U(2:end  ) - slog.*dCFX_dU2 + 0.5*h.*VbM./(UM.^2.*TM );
-df1_dU1 =  -(HM + 2 + HWM)./U(1:end-1) - slog.*dCFX_dU1 + 0.5*h.*VbM./(UM.^2.*TM );
+df1_dU2 =   (HM + 2 + HWM)./U(2:end  ) - slog.*dCFX_dU2 + 0.5*h.*VbM./(UM.^2.*TM ) + h.*pTM./(UM.^3.*TM );
+df1_dU1 =  -(HM + 2 + HWM)./U(1:end-1) - slog.*dCFX_dU1 + 0.5*h.*VbM./(UM.^2.*TM ) + h.*pTM./(UM.^3.*TM );
 
 % arc length s
 if IsWake
    df1_ds1=zeros(dimMi); df1_ds2=zeros(dimMi); 
 else
-   df1_ds2=-1./s2.*CFX - slog.*dCFX_ds2 - VbM./(UM.*TM);
-   df1_ds1= 1./s1.*CFX - slog.*dCFX_ds1 + VbM./(UM.*TM);
+   df1_ds2=-1./s2.*CFX - slog.*dCFX_ds2 - VbM./(UM.*TM) - pTM./(UM.^2.*TM);
+   df1_ds1= 1./s1.*CFX - slog.*dCFX_ds1 + VbM./(UM.*TM) + pTM./(UM.^2.*TM);
 end
 
 

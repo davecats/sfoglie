@@ -1,4 +1,4 @@
-function [ f1,f2,f3,df_dT,df_dD,df_dCt,df_dU ] = SingleJacobiTurb( DI,T,Ct,U,Vb,H,Ret,h,s1,diffU,IsWake,Wgap,nu)
+function [ f1,f2,f3,df_dT,df_dD,df_dCt,df_dU ] = SingleJacobiTurb( DI,T,Ct,U,Vb,H,Ret,h,s1,diffU,IsWake,Wgap,nu,pressureTerm)
 %SINGLEJACOBITURB    calculates the funtcionvalue and the derivates for Newton method
 %                   of the momentum EQ and the shape parameter EQ in turbulent case of known "1" values
 %       Variables:  DI: displacementthicknes
@@ -8,6 +8,11 @@ function [ f1,f2,f3,df_dT,df_dD,df_dCt,df_dU ] = SingleJacobiTurb( DI,T,Ct,U,Vb,
 %                   Vb: normal velocity (uniform blowing)
 %                   h : Vector with discretisation stepsize
 %                   IsWake: true if evaluation on wake
+
+if nargin==13
+    pressureTerm=zeros(size(Vb));
+end
+pTM=0.5*(pressureTerm(1:end-1) + pressureTerm(2:end)) ;
 
 N=length(T); 
 dimPl=size(T);
@@ -173,19 +178,19 @@ slog  = log(s2./s1); % substitute h= log(s2/s1) * sM
 
 
 % momentum equation -> right hand side of Newton System
-f1= Tlog + (HM + HWM + 2 ).*Ulog - slog.*CFX - h.*VbM./(UM.*TM);
+f1= Tlog + (HM + HWM + 2 ).*Ulog - slog.*CFX - h.*VbM./(UM.*TM) - h.*pTM./(UM.^2.*TM);
 
 
 % ------- derivates of momentum equation ------
 % momentum thickness T
-df1_dT2 = 1./T2 + (0.5*dH_dT(2:end) + dHWM_dT(2:end)).*Ulog - slog.*dCFX_dT2 + 0.5*h.* VbM./(UM.*TM.^2);
+df1_dT2 = 1./T2 + (0.5*dH_dT(2:end) + dHWM_dT(2:end)).*Ulog - slog.*dCFX_dT2 + 0.5*h.* VbM./(UM.*TM.^2) + 0.5*h.* pTM./(UM.^2.*TM.^2);
 % displacement thickness DI
 df1_dD2 =          0.5*dH_dD(2:end).*Ulog                   - slog.*dCFX_dD2 ;
 % shear stress c
 df1_dCt2 = zeros(dimMi);
 % Boundary layer edge velocity U
 if diffU
-	df1_dU2 =  (HM + 2 + HWM)./U(2:end) - slog.*dCFX_dU2 + 0.5*h.*VbM./(UM.^2.*TM );
+	df1_dU2 =  (HM + 2 + HWM)./U(2:end) - slog.*dCFX_dU2 + 0.5*h.*VbM./(UM.^2.*TM )  + h.*pTM./(UM.^3.*TM );
 end
 %-------------------------------------------------------------------------
 

@@ -42,7 +42,7 @@ s1=prf.sU(ind(1:end-1))';
 
 
 if length(ind)>1 
-    [ f1l,f2l,der] =JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,nu);
+    [ f1l,f2l,der] =JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,nu,sol.pressureTerm(ind));
 
 
     f1(indM)=f1l;
@@ -72,7 +72,7 @@ indM=ind(1:end-1);
 s1=prf.sL(indM-prf.Nle+1)';
 
 if length(ind)>1 
-    [ f1l,f2l,der] = JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,nu);
+    [ f1l,f2l,der] = JacobiLam(sol.T(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,nu,sol.pressureTerm(ind));
 
     f1(indM)=f1l;
     f2(indM)=f2l;
@@ -101,7 +101,8 @@ if length(ind)>1 % check for turbulent flow
     indM=ind(2:end); % indices for midpoint values -> without transition panel
     s1=prf.sU(ind(1:end-1))';
     
-    [ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,false,false,nu);
+    [ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),...
+                                        h(indM),s1,false,false,nu,sol.pressureTerm(ind));
 
     f1(indM)=f1t;
     f2(indM)=f2t;
@@ -131,7 +132,8 @@ if length(ind)>1
     indM=ind(1:end-1); % indices for midpoint values -> without transition panel
     s1=prf.s(sol.iTran(2):end-1)';
     
-    [ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,false,false,nu);
+    [ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),...
+                                        h(indM),s1,false,false,nu,sol.pressureTerm(ind));
     
     f1(indM)=f1t;
     f2(indM)=f2t;
@@ -160,7 +162,8 @@ indM=ind(1:end-1);
 s1=flo.wake.s(1:end-1)'+prf.sL(end);
 
 
-[ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),h(indM),s1,true,flo.wake.gap,nu);
+[ f1t,f2t,f3t,der ] = JacobiTurb(sol.D(ind),sol.T(ind),sol.c(ind),sol.U(ind),sol.Vb(ind),sol.HK(ind),sol.Ret(ind),...
+                                    h(indM),s1,true,flo.wake.gap,nu,sol.pressureTerm(ind));
 
 f1(indM)=f1t;
 f2(indM)=f2t;

@@ -1,14 +1,16 @@
-function [pInt] = PressureCorrect( s_start,s_end,s,Vb,U )
-%PRESSURECORRECT 
+function [pInt] = PressureCorrect( s_start,s_end,s,Vb,U ,DT)
+%PRESSURECORRECT models additional Pressure Term due to blowing: int dp/dx dy
+%                s_start: arclength of blowing start
+%                s_end  : arclength of blowing end
+%                DT     : Displacement thickness 
 
 dim=size(s);
 
-
-
 %ind0=find(s<s_start);
-ind1=find(s>s_start & s<s_end);
-ind2=find(s>s_end);
+ind1=find(s>=s_start-1e-12 & s<s_end);
+ind2=ind1(end)+1:length(s);
 
+DT=DT(ind1);% only in blowing region
 pInt=zeros(dim);
 
 
@@ -21,19 +23,47 @@ if length(U)==1
    U=U* ones(dim);
 end
 
-Vb(ind2)=max(Vb);
 
-delta=s_end-s_start;
-%sig=-delta/log(0.01);
-sig=delta/3.6;
+% derivate of u*delta_1 for approximation of magnitude of v
+% lim_0->infty v-V = d U*delta_1 /ds + v_b
+dUDT_ds= FiniteDifferences(U(ind1).*DT,s(ind1));
 
-a= 2.2*Vb./U;
+% normal velocity at BL edge
+vBL= dUDT_ds + Vb(ind1);
+
+% linear approximation of v in BL
+vmean= 0.5*(vBL + Vb(ind1));
+
+% for first lengthscale
+vm1= mean(vmean);
+vm2=vmean(end);
+
+
+Umean=mean(U(ind1));
+U(U<0.4*Umean)=0.4*Umean;
+
+
+%length for effect of Term to expire
+k=0.8; % fit to DNS
+L1=k*Umean/vm1 *mean(DT); % velocity information reaches displacement thickness
+L2=k*U(ind1(end))/vm2 *DT(end);
+
+%sig=-L/log(0.027); -> drop to 3% intensity after L
+sig1=L1/3.6;
+sig2=L2/3.6;
+
+
+a1= 2.2*Vb(ind1(1));
+a2= 2.2*Vb(ind1(end));
 
 s1=s(ind1)-s_start;
 s2=s(ind2)-s_end;
 
-pInt(ind1)= -a(ind1).*exp(-s1/sig);
-pInt(ind2)=  a(ind2).*exp(-s2/sig);
+pInt(ind1)= -a1*exp(-s1/sig1) - 0.45*Vb(ind1(1));
+pInt(ind2)=  a2*exp(-s2/sig2);
+pInt(ind1(end))=0;
 
+%scale
+pInt=pInt*0.84;
 end
 

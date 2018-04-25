@@ -7,8 +7,7 @@ function  sol  = GetInitialSolution( prf, flo, tri, eng, Uinv, Vb, InVal)
 wake=flo.wake;
 Re=flo.Re;
 nu=flo.nu;
-trip=tri.active;
-xtrip=tri.x;
+
 
 N=prf.N;
 Nle=prf.Nle;

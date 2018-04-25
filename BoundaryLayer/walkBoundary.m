@@ -254,7 +254,7 @@ for i=Start:step:Ende
         sol.c(i+step)=n2;
         
         % tripping arc length in current intervall
-        if sol.Tripping(section) && prf.nodes.X(i+step)>sol.xT(section)
+        if sol.Tripping(section) && prf.nodes.X(i+step)>sol.xT(section) && prf.nodes.X(i)<sol.xT(section)
             tr=true;
             w1= (prf.nodes.X(i+step)-sol.xT(section))/ (prf.nodes.X(i+step)-prf.nodes.X(i));
             w2=1-w1;
@@ -265,11 +265,19 @@ for i=Start:step:Ende
         if sol.c(i+step)> nkrit || tr
             lam=false;     
             
-            if sol.c(i+step)>nkrit; sol.Tripping(section)=false; end
+            % free transition before tripping
+            if ~tr && sol.Tripping(section)
+                sol.Tripping(section)=false; % set tripping false for transition EQ
+                before=true;
+            else
+                before=false;
+            end 
             
             % solve the Equations for Transition panel
             ind=i:step:i+step; % node indizes
             [ Llam,T2,D2,U(2),C1,~ ] = Transition(section, sol, flo, eng, sol.c(ind), sol.T(ind), sol.D(ind),sol.U(ind),sol.Vb(ind),sBL(i),Lges(i-shift));
+            
+            if before; sol.Tripping(section)=true; end % make sure tripping location is still checked
             
             %----------
             % write transition node values
