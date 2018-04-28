@@ -1,8 +1,8 @@
-function [solnew,Rel, res] = Update(prf,flo,sol,dT, dc,dm,Uinv,D,k)
+function [solnew,Rel, res,eng] = Update(prf,flo,sol,dT, dc,dm,Uinv,D,eng,k)
 %UPDATE updates the solution from one Newton step and underrelaxes if necessary
 
 nu=flo.nu;
-nkrit=flo.nkrit;
+%nkrit=flo.nkrit;
 
 
 Un=Uinv + D*(sol.m+dm);
@@ -17,6 +17,7 @@ dCLmin= max(-0.5, -0.9*sol.CL);
 Rel=1;
 if dCL > 0.5;  Rel= 0.5/dCL; end
 if dCL < dCLmin; Rel=dCLmin/dCL; end
+
 
 dU= Un  -sol.U;
 
@@ -43,6 +44,38 @@ DU=dU/0.25;
 rms= DC(1:prf.N).^2 + DT(1:prf.N).^2 + DD(1:prf.N).^2 + DU(1:prf.N).^2;
 res= sqrt( sum(rms)/(4*prf.N) );
 
+% identify potential problems with Transition equation
+%----------------------------------------------------
+if ~sol.Tripping(1) && ~sol.Tripping(2) % only if there is no tripping
+    % check for switch to tranEQ mode 2
+    if eng.tranEQ==1 && k>eng.it/2 ; % check after half of iterations
+        mm=max(rms);
+        res_red=sqrt( (sum(rms)-mm)/(4*(prf.N-1)) ); 
+        if res_red<0.9*res;
+            ind=find(rms>mm-1e-4,1,'first');
+            % only change mode if maximum residual is near one of the Transition locations
+            if ind<abs(sol.iTran(1)-2)||ind<abs(sol.iTran(1)+2)|| ind<abs(sol.iTran(2)-2)||ind<abs(sol.iTran(2)+2)
+               eng.tranEQ=2; % switch to tran EQ 2
+               eng.it=round(1.25*eng.it); % do a bit more iterations
+               eng.Changed=2;
+               disp('konvegrence problem of Transition point ->TranEQ switched to mode 2')
+            end
+        end
+    % check for switch to tranEQ mode 3
+    elseif eng.tranEQ==2 && k>eng.it/1.2 ;
+        mm=max(rms);
+        res_red=sqrt( (sum(rms)-mm)/(4*(prf.N-1)) ); 
+        if res_red<0.9*res;
+            ind=find(rms>mm-1e-4,1,'first');
+            if ind<abs(sol.iTran(1)-2)||ind<abs(sol.iTran(1)+2)|| ind<abs(sol.iTran(2)-2)||ind<abs(sol.iTran(2)+2)
+               eng.tranEQ=3; % switch to tran EQ 2
+               eng.it=round(1.4*eng.it);% do a bit more iterations
+               eng.Changed=3;
+               disp('konvegrence problem of Transition point ->TranEQ switched to mode 3')
+            end
+        end    
+    end
+%---------------------------------------------------------------------
 % figure
 % hold on
 % plot(prf.s,DC(1:prf.N).^2)

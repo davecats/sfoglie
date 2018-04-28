@@ -1,4 +1,4 @@
-function [solnew, prf] = NewtonEq( prf,flo,eng,sol,D0,Uinv,it,pressureCor)
+function [solnew, prf] = NewtonEq( prf,flo,eng,sol,D0,Uinv,pressureCor)
 %NEWTONEQ       sets up the global Newton equationsystem J dz=- f(z) and
 %               solves it iterativly
 %               sol:    initial solution struct
@@ -24,7 +24,7 @@ GamStart= [Uinv(1:prf.Nle-1); -Uinv(prf.Nle:end)];
 
 % Model for correction of the pressure Term   
 %------------------------------------------------------------------------------------------
-if nargin==7
+if nargin==6
     pressureCor=false;
 end
 Blow=find(sol.Vb~=0);
@@ -51,7 +51,7 @@ end
 
 %xtrr=zeros(it,2);
 
-while res>eng.tol && k<it 
+while res>eng.tol && k<eng.it 
     
      % adjust sign for pressure/suction side
      sgn=ones(size(D0));
@@ -77,7 +77,7 @@ while res>eng.tol && k<it
     dm=dz(2*Nges+1:end);
 
     % updates values with underrelaxation for big changes
-    [solnew,Rel,res]=Update(prf,flo,sol,dT,dc,dm,Uinv,D,k);
+    [solnew,Rel,res,eng]=Update(prf,flo,sol,dT,dc,dm,Uinv,D,eng,k);
 
     % max residuum
     k=k+1;
@@ -140,9 +140,6 @@ solnew.residual=res;
 % legend('suction','pressure')
 
 
-
-
-
 % final values
 % calculate values of end solution (Cf, CD, CL ...)
 
@@ -179,13 +176,13 @@ if prf.sharpTE
    solnew.Cp(prf.N)=solnew.Cp(1); 
 end
 
-% find seperation points
-% suctionside
-[solnew.xseparation(1), solnew.xreattach(1)]=FindSeparationLoc( prf.nodes.X(prf.Nle-1:-1:1),solnew.HK(prf.Nle-1:-1:1),...
-                                                                                            prf.Nle-solnew.iTran(1), 3.8,2.5 );
-%pressure side
-[solnew.xseparation(2), solnew.xreattach(2)]=FindSeparationLoc( prf.nodes.X(prf.Nle:prf.N),solnew.HK(prf.Nle:prf.N),...
-                                                                                           solnew.iTran(2)-prf.Nle+1, 3.8,2.5 );
+% % find seperation points
+% % suctionside
+% [solnew.xseparation(1), solnew.xreattach(1)]=FindSeparationLoc( prf.nodes.X(prf.Nle-1:-1:1),solnew.HK(prf.Nle-1:-1:1),...
+%                                                                                             prf.Nle-solnew.iTran(1), 3.8,2.5 );
+% %pressure side
+% [solnew.xseparation(2), solnew.xreattach(2)]=FindSeparationLoc( prf.nodes.X(prf.Nle:prf.N),solnew.HK(prf.Nle:prf.N),...
+%                                                                                            solnew.iTran(2)-prf.Nle+1, 3.8,2.5 );
 
 
 % Write out

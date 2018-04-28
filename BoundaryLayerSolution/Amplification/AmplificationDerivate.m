@@ -1,9 +1,9 @@
 function [dn,ddn_dT,ddn_dH, ddn_dRet,ddn_dn] = AmplificationDerivate(flo,H,Ret,T,getDerivates,n )
-%AMPLIFICATIONEQ    calculates the Amplification increase of each interval dn
-%                   and its partial derivates in respect to T, H12 and Ret 
-
+%AMPLIFICATIONEQ    calculates the approximated derivate of the amplificationfactor
+%                       dn= n'(s)  =( n(s2)-n(s1) ) /h  ,   h=s2-s1
+%                    and its partial derivates in respect to T, H12 and Ret 
+          
 nkrit=flo.nkrit;
-
 
 if nargin==5
     getDerivates=false;

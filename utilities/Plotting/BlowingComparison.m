@@ -15,6 +15,9 @@ Cd_red=  (solB.Cdrag-sol.Cdrag)/sol.Cdrag ;
 Cnu_red=  (solB.Cnu-sol.Cnu)/sol.Cnu ;
 CL_red=  (solB.CL-sol.CL)/sol.CL ;
 
+cwp=sol.Cdrag-sol.Cnu;
+cwpB=solB.Cdrag-solB.Cnu;
+cwp_red=(cwpB-cwp) /cwp;
 
 ratio_red= (solB.CL/solB.Cdrag - sol.CL/sol.Cdrag)*sol.Cdrag/sol.CL;
 
@@ -35,17 +38,16 @@ line([xLtr(1) endL(1)]  , [xLtr(2) endL(2)],'color','k','Linewidth',0.7);
 text(0.4*prf.c, 0.28*prf.c, str);
 
 
-colHead={'c_a','c_w','c_wR','ratio'};
+colHead={'c_a','c_w','c_wR','c_wp','ratio'};
 rowHead={'No Blow','Blow','rel. change [%]'};
 
- TT= [sol.CL , sol.Cdrag , sol.Cnu ,sol.CL/sol.Cdrag;...
-      solB.CL, solB.Cdrag, solB.Cnu,solB.CL/solB.Cdrag  ;...
-      round(CL_red*100,2), round(Cd_red*100,2),round(Cnu_red*100,2),round(ratio_red*100,2)];
+
+ TT= [sol.CL , sol.Cdrag , sol.Cnu, cwp ,sol.CL/sol.Cdrag;...
+      solB.CL, solB.Cdrag, solB.Cnu,cwpB,solB.CL/solB.Cdrag  ;...
+      round(CL_red*100,3), round(Cd_red*100,3),round(Cnu_red*100,3),round(cwp_red*100,3),round(ratio_red*100,3)];
 
   
-  
-  
-Tab=table(TT(:,1),TT(:,2),TT(:,3),TT(:,4),'RowNames',rowHead,'VariableNames',colHead)
+Tab=table(TT(:,1),TT(:,2),TT(:,3),TT(:,4),TT(:,5),'RowNames',rowHead,'VariableNames',colHead)
 
 % Tab=uitable;
 % Tab.Data=TT;

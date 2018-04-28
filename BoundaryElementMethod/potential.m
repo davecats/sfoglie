@@ -16,9 +16,11 @@ flo.A=A; flo.B=B;
 %Add streamfunction psi0 as unknown
 A=[A, -ones(N+1,1)];
 
-if prf.sharpTE
+if prf.sharpTE   
      A(end,:)=zeros(1,N+2); % delete Equation from last node -> equals to first node
      t(end)=0;
+     
+     % no reverse flow condition
      A(end,2)=-2;A(end,3)=1;A(end,end-2)=2;A(end,end-3)=-1; 
      A(end,1)=1;A(end,end-1)=-1;
 end

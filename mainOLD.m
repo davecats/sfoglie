@@ -1,35 +1,24 @@
  % Script for airfoil calculation with plots and a comparison blowing/ no blowing 
 
-
-close all
- clear all
-%format long eng
-
-addpath('./panel/')
-addpath('./Amplification/')
-addpath('./geometry/')
-addpath('./utilities/')
-addpath('./models/')
-addpath('./wake/')
-addpath('./BoundaryLayer/')
-set(groot, 'defaultAxesTickLabelInterpreter','LaTex'); set(groot, 'defaultLegendInterpreter','LaTex');
-
+%init
 %%
 %  air foil geometry and flow Parameters
 %------------------------------------------------------------------------------
 % BlowingComparison(prfE,flo.wake,sol,prfB,solB,1);
+% 
+
 %  prf and panels
 %  ------------------
-prf.naca = [4 4 1 2];         %  NACA 4-digit prf 
+prf.naca = [4 4 1 2];        %  NACA 4-digit prf 
 prf.noSkew  = true;          %  if true neglects prf skewness
-prf.sharpTE = false;          %  if true modifies NACA prf for shart trailing edge
-prf.c = 1;                    %  prf chord length 
-prf.M = 90;                  %  number of control points for each surface
-prf.pmode = 1;                %  node distribution mode: 1 (more nodes in middle) 2 (more nodes at LE and TE)
+prf.sharpTE = false;         %  if true modifies NACA prf for shart trailing edge
+prf.c = 1;                   %  prf chord length 
+prf.M = 180;                 %  number of control points for each surface
+prf.pmode = 1;               %  node distribution mode: 1 (more nodes in middle) 2 (more nodes at LE and TE)
 
 %  Flow
 %  ----
-flo.alfa = 0*pi/180;         %  Angle of attack 
+flo.alfa = 2*pi/180;         %  Angle of attack 
 flo.invisc = false;          %  only inviscid solution 
 flo.Uinfty=1;                %  velocity of outer flow
 flo.Re= 4e5;                 %  Chord Reynoldsnumber
@@ -40,7 +29,7 @@ flo.nkrit=  0.15;%          %  critical amplification exponent for transition
 tri.active=[ false;...         %  tripping on suction side 
              false];           %  tripping on pressure side 
 
-tri.x = [ 0.145;...             %  tripping location on suctoin side
+tri.x = [ 0.145;...            %  tripping location on suctoin side
           0.29 ]*prf.c;        %  tripping location on pressure side
 
 
@@ -56,91 +45,36 @@ xBend  = [0.5;...
           1]* prf.c;
       
 % blowing intensity      
-intensity=[0.005;...
-           0.005]* flo.Uinfty;
+intensity=[0.001;...
+           0.001]* flo.Uinfty;
 
 pressureCor=false;%true; %  include correction Term for pressure
 
 %  Newton Solver
 %  --------------
 eng.it=25;                   % maximum number of Newton step iterations
-eng.tranEQ=false;            % false) xfoil transition EW, true) modified transition EQ
+eng.tranEQ=2;                % 1) xfoil transition EQ 2nd Order 2) xfoil transition EQ 1nd Order 3) modified transition EQ
 eng.tol=5e-4;                % tolerance of Newton method
 
-
-%--------------------------------------------------
-%cinematic viscosity
-flo.nu= prf.c*flo.Uinfty /flo.Re;
-
-eng.NW= round(prf.M/4)+2; %   number of wake nodes
-
-% x- and y- compoent of incoming flow
-flo.ui = flo.Uinfty*cos(flo.alfa); 
-flo.vi = flo.Uinfty*sin(flo.alfa);
-
-% calculate NACA profile Nodes
-prf = naca4(prf);
-
-
-% % import profile Nodes
-% data=load('e387.txt');
-% prf.nodes.X=transpose(data(:,1));prf.nodes.Y=transpose(data(:,2));
-% prf.N=length(data(:,1)); clear data
-
-
-% create the panels, identify if profile has sharp or blunt trailing edge
-prf = create_panels(prf);
-
-
-%%
 
 %----------------------------------------------------------------------------
 %  inviscid solution
 %----------------------------------------------------------------------------
 
-
-% Solve potential flow
-[flo]=potential(prf,flo);
-% Get stagnation point position
-[ prf.Nle,prf.sLE,prf.LE1,prf.LE2 ] = getStagnationPoint( flo.gamma, prf.s );
-Nle=prf.Nle;   N=prf.N;
-% arc length vector pressure side
-prf.sL=prf.s(Nle:end)-(prf.s(Nle)-prf.LE2)*ones(1,N-Nle+1); 
-% arc length vector suction side
-prf.sU=(prf.s(Nle-1)+prf.LE1)*ones(1,Nle-1)-prf.s(1:Nle-1);   
-prf.xU=prf.panels.X(1,1:Nle-1);   prf.xL=prf.panels.X(1,Nle:end);
-if prf.sharpTE; prf.xL=[prf.xL,prf.panels.X(2,end) ]; end
-
+[prf,flo,CoeffMatrix,Uinv,sges ] = InviscidSolution(prf,flo,eng);
 
 % Plot inviscid pressure coefficient
 if flo.invisc
     Cp=1-flo.gamma.^2;
-    CL=getCL(prf,flo.gamma);
+    CL=getCL(prf,flo.gamma,flo.alfa,flo.Uinfty);
     if prf.sharpTE; Cp=[Cp; Cp(1)]; end
     figure()
     hold on; box on
-    plot([xU,xL(1)], Cp(1:Nle));
-    plot(xL,  Cp(Nle:end));
+    plot([prf.xU,prf.xL(1)], Cp(1:Nle));
+    plot(prf.xL,  Cp(Nle:end));
     xlim([0 1]);
     legend('$C_p=1-\gamma(s)^2$ Saugseite','$C_p=1-\gamma(s)^2$ Druckseite');
-end
-
-
-
-
-%%
-%  Wake influence
-%------------------------------------
-
-
-%   calculate wake node position
-%------------------------------------
-% done by integrating the streamline throug the TE of inviscid solution
-flo.wake=GetWakeStreamline(flo,prf,eng.NW);
-
-
-% Plot profile and wake
-if flo.invisc
+    
    figure; 
    hold on; box on;
    plot([prf.panels.X]',[prf.panels.Y]','k','Linewidth',2);
@@ -149,73 +83,9 @@ if flo.invisc
    return;
 end
 
-
-% Source coefficient matrix for airfoil nodes Bges
-%-------------------------------------------------------------
-
-% source influence of airfoil nodes -> i=1,..,N ; j=1,..,N
-B=Qlin(prf.nodes.X', prf.nodes.Y' ,prf); % piecewise linear ansatz
-
-% source influence of wake nodes -> i=1,..,N ; j=N+1,..,N+NW
-Bw=Qlin(prf.nodes.X', prf.nodes.Y' ,flo.wake,true); 
-
-Bges=[B, Bw];
-
-
 % [L,U,ind] = lu(flo.Ages,'vector');
 % ALU= U + L-eye(size(flo.Ages));
 
-Ai=inv(flo.Ages);
-
-% invert airfoil node Coeffs to get Coefficient for Boundary edge velocity U
-Btilde=-Ai(1:prf.N,1:prf.N)*Bges;
-
-
-if prf.sharpTE
-    % delete influence of dummy TE panel for sharp TEs
-    Btilde(prf.N,prf.N+1:prf.N+flo.wake.N)=0;
-end
-
-% Source coefficient matrix for wake nodes C
-%-------------------------------------------------------------
-
-% influence of airfoil nodes -> i=N+1,..,N+NW ; j=1,..,N+NW
-[Cg, Cq] = GradPsiN( prf,flo.wake );
-
-
-% add gamma influence on Cq
-Cq2= Cq - Cg*Btilde;
-
-% Total source coefficient matrix for EQ Ui= Uinv + Dij qj
-%-------------------------------------------------------------
-
-D= [Btilde;Cq2];
-% make sure first wake point has same velocity as trailing edge
-D(N+1,:)=D(N,:);
-     
-
-%global arclength vector
-sges= [prf.s, (prf.s(end)+prf.panels.L(end)/2)*ones(size(flo.wake.s)) + flo.wake.s]; 
-
-
-% Calculate inviscous velocity on airfoil and wake nodes
-%---------------------------------------------
-
-% Velocity at airfoil nodes
-%UinvFoil=  Ai*( flo.psi0*ones(N,1)+flo.t); %-> equal to flo.gamma
-
-UFoil = abs(flo.gamma);
-nix= flo.wake.nn(1,:)';%[flo.wake.n(1,1); flo.wake.n(1,:)'];
-niy= flo.wake.nn(2,:)';%[flo.wake.n(2,1); flo.wake.n(2,:)'];
-
-UWake = flo.ui*niy - flo.vi*nix + Cg*flo.gamma;
-UWake(1)=UFoil(end); % First wake point has same velocity as TE
-clear nix niy
-
-Uinv=[UFoil; UWake];
-
-
-%% 
 
 %----------------------------------------------------------------------------
 %  viscous solution
@@ -231,7 +101,7 @@ Vb=zeros(size(Uinv));
 % initial solution guess
 ini = GetInitialSolution( prf,flo, tri, eng, Uinv, Vb, 2);
 %  coupled boundary layer and potential flow solution
-[sol, prfE]=NewtonEq( prf,flo,eng,ini,D,Uinv,eng.it,pressureCor);
+[sol, prfE]=NewtonEq( prf,flo,eng,ini,CoeffMatrix.D,Uinv,pressureCor);
 
 % If no convergence -> try with different approach for Transition panel EQ
 if sol.residual>eng.tol
@@ -239,9 +109,9 @@ if sol.residual>eng.tol
     disp('Not converged, Try different Transition approach ')
     disp('------------------------------------------------ ')
     if sol.residual<1
-        [solTST, prfTST]=NewtonEq( prfE,flo,eng,sol,D,Uinv,eng.it,pressureCor);
+        [solTST, prfTST]=NewtonEq( prfE,flo,eng,sol,CoeffMatrix.D,Uinv,pressureCor);
     else
-        [solTST, prfTST]=NewtonEq( prf,flo,eng,ini,D,Uinv,eng.it,pressureCor);
+        [solTST, prfTST]=NewtonEq( prf,flo,eng,ini,CoeffMatrix.D,Uinv,pressureCor);
     end
     
     if solTST.residual < sol.residual
@@ -266,9 +136,9 @@ end
 %----------------------------------------------
 
 
-% tri.active=[ true; true];  
-% tri.x=sol.tran.x;
-% flo.nkrit=  9;% 
+%  tri.active=[ true; true];  
+%  tri.x=sol.tran.x;
+%  flo.nkrit=  9;% 
 
 if ~withBlowing(1) && ~withBlowing(2); return; end
 
@@ -291,24 +161,8 @@ end
 % initial solution guess
 iniB = GetInitialSolution( prf,flo, tri, eng, Uinv, Vb, 2);
 %  coupled boundary layer and potential flow solution
-[solB, prfB]=NewtonEq( prf,flo,eng,iniB,D,Uinv,eng.it,pressureCor);
+[solB, prfB]=NewtonEq( prf,flo,eng,iniB,CoeffMatrix.D,Uinv,pressureCor);
 
-% If no convergence -> try with different approach for Transition panel EQ
-if solB.residual>eng.tol
-    eng.tranEQ=true;
-    disp('Not converged, Try different Transition approach ')
-    disp('------------------------------------------------ ')
-    if sol.residual<1
-        [solTST, prfTST]=NewtonEq( prfB,flo,eng,solB,D,Uinv,eng.it,pressureCor);
-    else
-        [solTST, prfTST]=NewtonEq( prf,flo,eng,iniB,D,Uinv,eng.it,pressureCor);
-    end
-    
-    if solTST.residual < sol.residual
-       solB=solTST; prfB=prfTST;
-    end
-    clear solTST  prfTST TranEQ2
-end
 %--------------------------------------------------------------
 
 % PlotStuff(prfB,flo.wake,solB, 'tau');
