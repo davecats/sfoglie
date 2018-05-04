@@ -11,69 +11,25 @@ parameters
 %---------------------------------------------------------
 
 % set reference case
-CL_ref=sol.CL; CD_ref=sol.Cdrag; tr_ref=sol.tran.x;
+CL_ref=sol.CL; CD_ref=sol.Cdrag; tr_ref=sol.tran.x;ratio_ref=CL_ref/CD_ref;
 
-% use tripping at transition location ofuncontrolled case (not necessary)
-solRef=sol;prfRef=prf;
-tri.active=[true;true];
-tri.x=solRef.tran.x;
-flo.nkrit=9;
-
-% blo.x={0.048402*prf.c;         
-%        0.050529*prf.c;};
-% blo.active=true;
-% [solB,prfB,flo,~,~,~,~]=airfoil(prf,flo,tri,blo,eng,InvRef);
-% BlowingComparison(prf,flo.wake,sol,prfB,solB,1);
-
-%
-%% particel swarm optimization
-%--------------------------------------------------------------
-% inviscid solution -> only calculate once because it does not change
-[InvRef.prf,InvRef.flo,InvRef.CoeffMatrix,InvRef.Uinv,InvRef.sges ] = InviscidSolution(prf,flo,eng);
+% % use tripping at transition location of uncontrolled case (not necessary)
+%solRef=sol;prfRef=prf;
+%tri.active=[true;true];
+%tri.x=solRef.tran.x;
+%flo.nkrit=9;
 
 
-% fixed parameters for optimization
-global OptiInputStruct % musst be global to be avaivable in Optimization function handle
-OptiInputStruct=InvRef;
-OptiInputStruct.blo=blo;OptiInputStruct.tri=tri;OptiInputStruct.eng=eng;
-
-global PSOerg
-PSOerg=[];
-handle=@fOPT;
-lowerConstraint=-0.1*[1,1];
-upperConstraint=1.1*[1,1];
-PS_Options=optimoptions('particleswarm','SwarmSize',20,'PlotFcn','pswplotbestf','OutputFcn',@PSOout);
-
-% optimization process
-rng default 
-[p,val,exitCond,out]=particleswarm(handle,2,lowerConstraint,upperConstraint,PS_Options);
-
-
-
-%   Plot
-%
-%scatter3(PSOerg(:,1),PSOerg(:,2),PSOerg(:,3))
-
-% Plot of optimization parameters
-[xm,ym]=meshgrid(-0.1:0.02:1.1);
-zm=griddata(PSOerg(:,1),PSOerg(:,2),PSOerg(:,3),xm,ym);
-figure
-hold on
-contourf(xm,ym,zm)
-scatter(PSOerg(:,1),PSOerg(:,2),'k x')
-
-% compare optimal case
-blo.x={p(1)*prf.c;         
-       p(2)*prf.c;};
-blo.active=true;
-[sol,prf,flo,~,~,~]=airfoil(prf,flo,tri,blo,eng);
-BlowingComparison(prfRef,flo.wake,solRef,prf,sol,1);
-
-
-%dlmwrite('./optimization/Re4e5_alfa12_Tr_NoSkw.txt',PSOerg)
-
-%polarF = './optimization/Re4e5_Polar_Tr_NoSkw.txt';
-%dlmwrite(polarF,[12, p,sol.CL,sol.Cdrag,sol.Cnu,sol.CL/sol.Cdrag], '-append')
+blo.active=true;                 
+blo.L= {[0.1]*prf.c;              %  length of blowing area: suction side
+        [0.1]*prf.c;};            %  length of blowing area: pressure side
+blo.x= {0.1*prf.c;          %  midpoint of blowing area
+        0.1*prf.c;};             
+blo.A= {[0.005]*flo.Uinfty;
+        [0.0]*flo.Uinfty};
+    
+[solB,prfB,flo,~,~,~,~]=airfoil(prf,flo,tri,blo,eng,InvRef);
+BlowingComparison(prf,flo.wake,sol,prfB,solB,1);
 
 
 % %%
@@ -82,7 +38,7 @@ BlowingComparison(prfRef,flo.wake,solRef,prf,sol,1);
 % 
 % % quantities that can be plotted: 
 % %'tau','Cf','Cfint','Cp','delta' ,'U', 'CD','D','H12' ,'H32', 'Ret'
-% % section: 1 - pressure side, 2 - suction side, 3 - wake, 4 - suction and pressure side , 5 - all sections
+% % section: 1 - suction side, 2 - pressure side, 3 - wake, 4 - suction and pressure side , 5 - all sections
 % % OverArclength=true ->  plot over arclength s instead of x                 
 % % section=4;
 % % OverArclength=false;

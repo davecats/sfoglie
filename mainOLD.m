@@ -13,7 +13,7 @@ prf.naca = [4 4 1 2];        %  NACA 4-digit prf
 prf.noSkew  = true;          %  if true neglects prf skewness
 prf.sharpTE = false;         %  if true modifies NACA prf for shart trailing edge
 prf.c = 1;                   %  prf chord length 
-prf.M = 180;                 %  number of control points for each surface
+prf.M = 140;                 %  number of control points for each surface
 prf.pmode = 1;               %  node distribution mode: 1 (more nodes in middle) 2 (more nodes at LE and TE)
 
 %  Flow
@@ -31,21 +31,21 @@ tri.active=[ false;...         %  tripping on suction side
 
 tri.x = [ 0.145;...            %  tripping location on suctoin side
           0.29 ]*prf.c;        %  tripping location on pressure side
-
+tri.x =[0.101569754294322;0.159518186008962]
 
 % ----------- blowing -----------------------
 withBlowing=[true;...  % blowing on suction side  
              false];   % blowing on pressure side 
 % blowing region
 % startpoint    
-xBstart= [0.25;...
+xBstart= [0.158;...
           0.9]* prf.c;
 % end point     
-xBend  = [0.5;...
+xBend  = [0.235;...
           1]* prf.c;
       
 % blowing intensity      
-intensity=[0.001;...
+intensity=[-0.0085;...
            0.001]* flo.Uinfty;
 
 pressureCor=false;%true; %  include correction Term for pressure

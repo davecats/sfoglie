@@ -75,6 +75,7 @@ if ~sol.Tripping(1) && ~sol.Tripping(2) % only if there is no tripping
             end
         end    
     end
+end
 %---------------------------------------------------------------------
 % figure
 % hold on
