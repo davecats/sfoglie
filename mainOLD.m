@@ -38,14 +38,14 @@ withBlowing=[true;...  % blowing on suction side
              false];   % blowing on pressure side 
 % blowing region
 % startpoint    
-xBstart= [0.158;...
+xBstart= [0.25;...
           0.9]* prf.c;
 % end point     
-xBend  = [0.235;...
+xBend  = [0.5;...
           1]* prf.c;
       
 % blowing intensity      
-intensity=[-0.0085;...
+intensity=[0.001;...
            0.001]* flo.Uinfty;
 
 pressureCor=false;%true; %  include correction Term for pressure
@@ -103,24 +103,6 @@ ini = GetInitialSolution( prf,flo, tri, eng, Uinv, Vb, 2);
 %  coupled boundary layer and potential flow solution
 [sol, prfE]=NewtonEq( prf,flo,eng,ini,CoeffMatrix.D,Uinv,pressureCor);
 
-% If no convergence -> try with different approach for Transition panel EQ
-if sol.residual>eng.tol
-    eng.tranEQ=true;
-    disp('Not converged, Try different Transition approach ')
-    disp('------------------------------------------------ ')
-    if sol.residual<1
-        [solTST, prfTST]=NewtonEq( prfE,flo,eng,sol,CoeffMatrix.D,Uinv,pressureCor);
-    else
-        [solTST, prfTST]=NewtonEq( prf,flo,eng,ini,CoeffMatrix.D,Uinv,pressureCor);
-    end
-    
-    if solTST.residual < sol.residual
-       sol=solTST; prfE=prfTST;
-    end
-    clear solTST  prfTST TranEQ2
-end
-%--------------------------------------------------------------
-
 
 % plot
 
@@ -173,7 +155,7 @@ iniB = GetInitialSolution( prf,flo, tri, eng, Uinv, Vb, 2);
 
 
 % % Plots with comparison blowing/ no blowing
-% BlowingComparison(prfE,flo.wake,sol,prfB,solB,1);
+% BlowingComparison(prfE,flo.wake,sol,prfB,solB,0);
 
 
 % % calculate drag reduction coefficients

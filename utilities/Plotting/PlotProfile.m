@@ -101,7 +101,7 @@ elseif mode==3 || mode==4
     ind=find(abs(sol.Vb(1:prf.N) )>1e-7); 
     if ~isempty(ind)
         add=' and blowing profiles';
-        Faktor= 0.02*prf.c/max(sol.Vb(1:prf.N));
+        Faktor= 0.02*prf.c/max(abs(sol.Vb(1:prf.N)));
         vb= [prf.nodes.X;prf.nodes.Y] - Faktor*([1;1]*sol.Vb(1:prf.N)' ).*prf.nodes.n;
         l2=plot(vb(1,:),vb(2,:),'b');
         legendE1='TP';

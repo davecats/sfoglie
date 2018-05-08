@@ -228,6 +228,10 @@ solnew.CI_U=tmp;
 solnew.CI_L=tmp;
 
 
+prf.xU=prf.panels.X(1,1:prf.Nle-1); 
+prf.xL=prf.panels.X(1,prf.Nle:end);
+
+
 end
 
 

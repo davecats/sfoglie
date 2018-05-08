@@ -29,7 +29,7 @@ blo.A= {[0.005]*flo.Uinfty;
         [0.0]*flo.Uinfty};
     
 [solB,prfB,flo,~,~,~,~]=airfoil(prf,flo,tri,blo,eng,InvRef);
-BlowingComparison(prf,flo.wake,sol,prfB,solB,1);
+BlowingComparison(prf,flo.wake,sol,prfB,solB,0);
 
 
 % %%
@@ -42,7 +42,8 @@ BlowingComparison(prf,flo.wake,sol,prfB,solB,1);
 % % OverArclength=true ->  plot over arclength s instead of x                 
 % % section=4;
 % % OverArclength=false;
-% % PlotStuff(prf,flo.wake,sol, 'tau',section,OverArclength);
+% % Quantity='tau';  
+% % PlotStuff(prf,flo.wake,sol, Quantity,section,OverArclength);
 % %------------------------------------------------------------------
 % 
 % % default: section = 4, OverArclength=false;
@@ -57,12 +58,14 @@ BlowingComparison(prf,flo.wake,sol,prfB,solB,1);
 % PlotProfile(prf,flo.wake,sol, mode);
 % 
 % % Comparison between blowing case and reference case without blowing
-% % mode 1: only plots overview with reduction in CL and Cd
-% % mode 2: plots overview + plots for suction side
-% % mode 3: plots overview + plots for pressure side
-% mode=1;
-% BlowingComparison(prf,flo.wake,sol,prfB,solB,1);
+% % section 0: only plots overview with reduction in CL and Cd
+% % section 1: plots overview + plots for suction side
+% % section 2: plots overview + plots for pressure side
+% % Quantities that can be plotted: 'Cf','Cp','delta','q'  
+% section=1;Quantity='Cf'; 
+% BlowingComparison(prf,flo.wake,sol,prfB,solB,section,Quantity);
 % 
+
 
 
 return

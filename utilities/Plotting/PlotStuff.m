@@ -18,7 +18,7 @@ function [  ] = PlotStuff( prf,wake,sol ,Quantity , section, OverArclength )
 %                'H12'   - shapeparameter H12
 %                'H32'   - shapeparameter H32
 %                'Ret'   - Reynoldsnumber based on U and momentumthickness
-
+%                'q'     - sourceterms
 
 %   total arclength vector
 if nargin<6
@@ -277,6 +277,27 @@ elseif strcmp(Quantity ,'H32')
              legend('suction side','pressure side / wake','location','best'); 
         end
     end     
+  
+    
+     elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q')
+    %------------------------- q  -----------------------------------------------
+    figure
+    hold on
+    title('momentumthickness based Reynolds-number')
+    xlabel(xstr)
+    ylabel( ' q ' )
+    
+    if section<4
+        plot( x(ind), sol.m(ind) );
+    else
+        plot( x(ind1), sol.m(ind1) );
+        plot( x(ind2), sol.m(ind2) );
+        if section==4
+            legend('suction side','pressure side','location','best'); 
+        else
+            legend('suction side','pressure side / wake','location','best'); 
+        end
+    end   
     
 end
 
