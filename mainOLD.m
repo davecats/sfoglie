@@ -31,21 +31,21 @@ tri.active=[ false;...         %  tripping on suction side
 
 tri.x = [ 0.145;...            %  tripping location on suctoin side
           0.29 ]*prf.c;        %  tripping location on pressure side
-tri.x =[0.101569754294322;0.159518186008962]
+
 
 % ----------- blowing -----------------------
 withBlowing=[true;...  % blowing on suction side  
              false];   % blowing on pressure side 
 % blowing region
 % startpoint    
-xBstart= [0.25;...
+xBstart= [0.158;...
           0.9]* prf.c;
 % end point     
-xBend  = [0.5;...
+xBend  = [0.235;...
           1]* prf.c;
       
 % blowing intensity      
-intensity=[0.001;...
+intensity=[-0.0085;...
            0.001]* flo.Uinfty;
 
 pressureCor=false;%true; %  include correction Term for pressure
@@ -102,6 +102,7 @@ Vb=zeros(size(Uinv));
 ini = GetInitialSolution( prf,flo, tri, eng, Uinv, Vb, 2);
 %  coupled boundary layer and potential flow solution
 [sol, prfE]=NewtonEq( prf,flo,eng,ini,CoeffMatrix.D,Uinv,pressureCor);
+
 
 
 % plot

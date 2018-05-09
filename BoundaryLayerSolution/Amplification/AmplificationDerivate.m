@@ -5,7 +5,7 @@ function [dn,ddn_dT,ddn_dH, ddn_dRet,ddn_dn] = AmplificationDerivate(flo,H,Ret,T
           
 nkrit=flo.nkrit;
 
-if nargin==5
+if nargin==4
     getDerivates=false;
 end
 

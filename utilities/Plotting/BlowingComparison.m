@@ -8,7 +8,11 @@ function [Tab ] = BlowingComparison(prf,wake,sol,prfB,solB,section,Quantity)
 %                       'Cp'    - Pressure coefficient
 %                       'delta' - Boundary layer thickness
 %                       'q'     - source terms
-
+%                       'H12'   - shape parameter
+%                       'H32'   - shape parameter
+%                       'CD'    - dissipation coefficient
+%                       'D'     - dissipation integral
+%                       'ReT'   - Reynoldsnumber based on momentum thickness
 
 
 
@@ -103,6 +107,120 @@ VbL=solB.Vb(prfB.Nle-1:prfB.N);
 indB1= find( abs(VbU)>1e-7 );
 indB2= find( abs(VbL)>1e-7 );
 
+
+legendstr={'without blowing','with blowing'};
+
+if strcmp(Quantity ,'Cf') || strcmp(Quantity ,'CF')|| strcmp(Quantity ,'tau')|| strcmp(Quantity ,'Tau')
+    titlestr='wall shear stress';
+    ystr=' C_f= \tau_w / \rho U_\infty^2 ';
+    yNo=sol.tau;
+    yBlow=solB.tau;
+elseif strcmp(Quantity ,'Cp') || strcmp(Quantity ,'CP')
+    titlestr='pressure coefficient';
+    ystr=' C_p ';
+    yNo=sol.Cp;
+    yBlow=solB.Cp;
+elseif strcmp(Quantity ,'H12') 
+    titlestr='Shape parameter';
+    ystr=' H_1_2 ';
+    yNo=sol.HK;
+    yBlow=solB.HK;
+elseif strcmp(Quantity ,'H12') 
+    titlestr='Shape parameter';
+    ystr=' H_3_2 ';
+    yNo=sol.HS;
+    yBlow=solB.HS;
+elseif strcmp(Quantity ,'CD') || strcmp(Quantity ,'cD')
+    titlestr='Dissipation coefficient';
+    ystr=' C_D ';
+    yNo=sol.CD;
+    yBlow=solB.CD;
+elseif strcmp(Quantity ,'D')
+    titlestr='Dissipation integral';
+    ystr=' D ';
+    yNo=sol.CD.*sol.U.^3;
+    yBlow=solB.CD.*solB.U.^3;
+elseif strcmp(Quantity ,'delta')
+    titlestr='Boundary Layer thickness';
+    ystr=' \delta ';
+    yNo=sol.D;
+    yBlow=solB.D;
+    
+    y2No=sol.T;
+    y2Blow=solB.T;
+    legendstr={'$\delta_1$ without blowing','$\delta_1$ with blowing','$\delta_2$ without blowing','$\delta_2$ with blowing'};
+elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q')
+    titlestr='source contribution';
+    ystr=' q ';
+    yNo=sol.m;
+    yBlow=solB.m;  
+elseif strcmp(Quantity ,'Ret') || strcmp(Quantity ,'ReT')
+    titlestr='Reynoldsnumber based on momentum thickness';
+    ystr=' Re_t';
+    yNo=sol.Ret;
+    yBlow=solB.Ret;    
+end
+
+if section==1
+    ind=1:prf.Nle-1;
+elseif section==2
+    ind=prf.Nle:prf.N;
+end
+xstr='x';
+
+%upper limit
+upl= max([yNo(ind);yBlow(ind)])*1.05;
+%lower limit
+lowl= min( 0,min([yNo(ind);yBlow(ind)]) );
+
+
+
+
+% plot
+figure 
+hold on
+title(titlestr) 
+xlabel(xstr)
+ylabel(ystr)
+plot(prf.nodes.X(ind),yNo(ind), 'b')
+plot(prf.nodes.X(ind),yBlow(ind), 'b --')
+if strcmp(Quantity ,'delta')
+    plot(prf.nodes.X(ind),y2No(ind),'r')
+    plot(prf.nodes.X(ind),y2Blow(ind),'r --')  
+elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q')
+    delta_q=solB.m-sol.m;
+    legendstr={'q without blowing','q with blowing','$q_b-q$'};
+    plot(prf.nodes.X(ind),delta_q(ind), 'r')
+end
+% blowing region
+if ~isempty(indB1) && section==1
+    line([prf.xU(indB1(1))   prf.xU(indB1(1))]  , [lowl  upl],'color','black','LineStyle','--');
+    line([prf.xU(indB1(end)) prf.xU(indB1(end))], [lowl  upl],'color','black','LineStyle','--');
+end
+if ~isempty(indB2) && section==2
+    line([prf.xL(indB2(1))   prf.xL(indB2(1))]  , [lowl  upl],'color','black','LineStyle','--');
+    line([prf.xL(indB2(end)) prf.xL(indB2(end))], [lowl  upl],'color','black','LineStyle','--');
+end
+%legendstr={legendstr,'blowing region'};
+legend(legendstr,'location','best'); 
+xlim([0,max(prf.nodes.X)])
+
+
+if strcmp(Quantity ,'Cp') || strcmp(Quantity ,'CP')
+    ind=1:prf.N;
+    figure 
+    hold on
+    title(titlestr) 
+    xlabel(xstr)
+    ylabel(ystr)
+    plot(prf.nodes.X(ind),yNo(ind), 'b')
+    plot(prf.nodes.X(ind),yBlow(ind), 'b --')
+    legend(legendstr,'location','best'); 
+    xlim([0,max(prf.nodes.X)])  
+end
+
+
+
 if strcmp(Quantity ,'Cf') || strcmp(Quantity ,'CF')|| strcmp(Quantity ,'tau')|| strcmp(Quantity ,'Tau')
     
     %-----------  Drag reduction factor ------------------
@@ -158,104 +276,10 @@ if strcmp(Quantity ,'Cf') || strcmp(Quantity ,'CF')|| strcmp(Quantity ,'tau')|| 
     xlabel(' s ')
     legend('without blowing','with blowing','blowing region','location','southeast'); 
 
-    % ------------ tau ----------------
+end
 
-    figure 
-    hold on
-    plot(prf.nodes.X(1:prf.N), sol.tau(1:prf.N) ,'g')
-    plot(prf.nodes.X(1:prf.N), solB.tau(1:prf.N) ,'b')
-    title('wall shear stress')
-    ylabel(' \tau_w ') 
-    xlabel(' x ')
-    xlim([0,1])
-    legend('without blowing','with blowing','location','northeast'); 
-
-elseif strcmp(Quantity ,'Cp') || strcmp(Quantity ,'CP')
-    %               Cp
-    %--------------------------------------------------------------------
-    figure 
-    hold on
-    plot(prf.nodes.X(1:prf.N), sol.Cp(1:prf.N) ,'g')
-    plot(prf.nodes.X(1:prf.N), solB.Cp(1:prf.N) ,'b')
-    title('Pressure coefficient')
-    ylabel(' C_p ') 
-    xlabel(' x ')
-    legend('without blowing','with blowing','location','northeast'); 
-    
- elseif strcmp(Quantity ,'delta') 
-     % displ and momentum Thickness
-     %---------------------------------
-     if section==1
-        figure 
-        hold on
-        plot(prf.nodes.X(1:prf.Nle-1), sol.D(1:prf.Nle-1) ,'k')
-        plot(prf.nodes.X(1:prf.Nle-1), sol.T(1:prf.Nle-1) ,'b')
-        plot(prf.nodes.X(1:prf.Nle-1), solB.D(1:prf.Nle-1) ,'r')
-        plot(prf.nodes.X(1:prf.Nle-1), solB.T(1:prf.Nle-1) ,'g')
-        if ~isempty(indB1)
-            line([prf.xU(indB1(1))   prf.xU(indB1(1))]  , [0  max(solB.D(1:prf.Nle-1))*1.05],'color','black','LineStyle','--');
-            line([prf.xU(indB1(end)) prf.xU(indB1(end))], [0  max(solB.D(1:prf.Nle-1))*1.05],'color','black','LineStyle','--');
-        end
-        title('BL thickness on suction side')
-        ylabel(' \delta ') 
-        xlabel(' x ')
-        legend('$\delta_1$ without blowing','$\delta_2$ without blowing','$\delta_1$ with blowing','$\delta_2$ with blowing','location','northeast'); 
-     else
-        figure 
-        hold on
-        plot(prf.nodes.X(prf.Nle-1:prf.N), sol.D(prf.Nle-1:prf.N) ,'k')
-        plot(prf.nodes.X(prf.Nle-1:prf.N), sol.T(prf.Nle-1:prf.N) ,'b')
-        plot(prf.nodes.X(prf.Nle-1:prf.N), solB.D(prf.Nle-1:prf.N) ,'r')
-        plot(prf.nodes.X(prf.Nle-1:prf.N), solB.T(prf.Nle-1:prf.N) ,'g')
-        if ~isempty(indB2)
-            line([prf.xL(indB2(1))   prf.xL(indB2(1))]  , [0  max(solB.D(prf.Nle:prf.N))*1.05],'color','black','LineStyle','--');
-            line([prf.xL(indB2(end)) prf.xL(indB2(end))], [0  max(solB.D(prf.Nle:prf.N))*1.05],'color','black','LineStyle','--');
-        end
-        title('BL thickness on pressure side')
-        ylabel(' \delta ') 
-        xlabel(' x ')
-        legend('$\delta_1$ without blowing','$\delta_2$ without blowing','$\delta_1$ with blowing','$\delta_2$ with blowing','location','northeast');  
-         
-         
-     end
-     
-elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q') 
-    
-    % sources
-%---------------------------------
-delta_q=solB.m-sol.m;
- if section==1
-    figure 
-    hold on
-    plot(prf.nodes.X(1:prf.Nle-1), sol.m(1:prf.Nle-1) ,'k')
-    plot(prf.nodes.X(1:prf.Nle-1), solB.m(1:prf.Nle-1),'b')
-    plot(prf.nodes.X(1:prf.Nle-1), delta_q(1:prf.Nle-1),'r ')
-    if ~isempty(indB1)
-        line([prf.xU(indB1(1))   prf.xU(indB1(1))]  , [0  max(solB.m)*1.05],'color','black','LineStyle','--');
-        line([prf.xU(indB1(end)) prf.xU(indB1(end))], [0  max(solB.m)*1.05],'color','black','LineStyle','--');
-    end
-    title('source distribution suction side')
-    ylabel(' q ') 
-    xlabel(' x ')
-    legend('q without blowing','q with blowing','$q_b-q$','location','northwest'); 
-    ylim([0  max(solB.m(1:prfB.Nle-1))*1.05])
- else
-    figure 
-    hold on
-    plot(prf.nodes.X(prf.Nle:prf.N), sol.m(prf.Nle:prf.N) ,'k')
-    plot(prf.nodes.X(prf.Nle:prf.N), solB.m(prf.Nle:prf.N),'b')
-    plot(prf.nodes.X(prf.Nle:prf.N), delta_q(prf.Nle:prf.N),'r ')
-    if ~isempty(indB2)
-        line([prf.xU(indB2(1))   prf.xU(indB2(1))]  , [0  max(solB.m)*1.05],'color','black','LineStyle','--');
-        line([prf.xU(indB2(end)) prf.xU(indB2(end))], [0  max(solB.m)*1.05],'color','black','LineStyle','--');
-    end
-    title('source distribution pressure side')
-    ylabel(' q ') 
-    xlabel(' x ')
-    legend('q without blowing','q with blowing','$q_b-q$','location','northwest'); 
-    ylim([0  max(solB.m(prfB.Nle:prf.N))*1.05]) 
-     
- end
+ 
+end
     
 % 
 % figure 
@@ -267,5 +291,4 @@ delta_q=solB.m-sol.m;
 % legend('q without blowing','q with blowing','$q_b-q$','location','northwest')
 
 
-end
 

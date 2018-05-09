@@ -7,30 +7,31 @@ parameters
     %-> can be committed by next use of airfoil function as input to get shorter calculation process
 [sol,prf,flo,~,~,~,~]=airfoil(prf,flo,tri,blo,eng,InvRef);
 
-
 %---------------------------------------------------------
 
 % set reference case
 CL_ref=sol.CL; CD_ref=sol.Cdrag; tr_ref=sol.tran.x;ratio_ref=CL_ref/CD_ref;
 
-% % use tripping at transition location of uncontrolled case (not necessary)
-%solRef=sol;prfRef=prf;
-%tri.active=[true;true];
-%tri.x=solRef.tran.x;
-%flo.nkrit=9;
+% use tripping at transition location ofuncontrolled case (not necessary)
+solRef=sol;prfRef=prf;
+tri.active=[true;true];
+tri.x=solRef.tran.x;
+flo.nkrit=9;
 
-
+%p=[0,0.08016,0.01];
+p=[0.8292,0.1262,-0.01];
+xm=p(1)+p(2)/2;
 blo.active=true;                 
-blo.L= {[0.1]*prf.c;              %  length of blowing area: suction side
+blo.L= {[p(2)]*prf.c;              %  length of blowing area: suction side
         [0.1]*prf.c;};            %  length of blowing area: pressure side
-blo.x= {0.1*prf.c;          %  midpoint of blowing area
+blo.x= {xm*prf.c;          %  midpoint of blowing area
         0.1*prf.c;};             
-blo.A= {[0.005]*flo.Uinfty;
+blo.A= {[p(3)]*flo.Uinfty;
         [0.0]*flo.Uinfty};
     
 [solB,prfB,flo,~,~,~,~]=airfoil(prf,flo,tri,blo,eng,InvRef);
-BlowingComparison(prf,flo.wake,sol,prfB,solB,0);
 
+BlowingComparison(prf,flo.wake,sol,prfB,solB,1,'delta');
 
 % %%
 % % % Plots
@@ -61,11 +62,10 @@ BlowingComparison(prf,flo.wake,sol,prfB,solB,0);
 % % section 0: only plots overview with reduction in CL and Cd
 % % section 1: plots overview + plots for suction side
 % % section 2: plots overview + plots for pressure side
-% % Quantities that can be plotted: 'Cf','Cp','delta','q'  
+% % Quantities that can be plotted: 'Cf','Cp','delta','q','H12','H32','CD','D','ReT'  
 % section=1;Quantity='Cf'; 
 % BlowingComparison(prf,flo.wake,sol,prfB,solB,section,Quantity);
 % 
-
 
 
 return

@@ -52,28 +52,16 @@ else
     ind2=(prf.M:prf.N + wake.N);  
 end
 
-if strcmp(Quantity ,'tau') || strcmp(Quantity ,'Tau')
-    %-------------------------  TAU -----------------------------------------------
-    figure
-    hold on
-    title('Wall shear stress')
-    xlabel(xstr)
-    ylabel( ' \tau_w / \rho U_\infty^2 ' )
-    
-    if section<4
-        plot( x(ind), sol.tau(ind) );
-    else
-        plot( x(ind1), sol.tau(ind1) );
-        plot( x(ind2), sol.tau(ind2) );
-        if section==4
-            legend('suction side','pressure side','location','best'); 
-        else
-             legend('suction side','pressure side / wake','location','best'); 
-        end
-    end
-    
-    
-elseif strcmp(Quantity ,'Cfint') || strcmp(Quantity ,'cfint')
+%legend for sections
+if section==4
+    legendstr={'suction side','pressure side'}; 
+elseif section==5
+    legendstr={'suction side','pressure side / wake'}; 
+end
+
+% plots with "special" threatment: Cfint, delta
+plotted=false;
+if strcmp(Quantity ,'Cfint') || strcmp(Quantity ,'cfint')
     %------------------------- Cfint -----------------------------------------------
     figure
     hold on
@@ -92,49 +80,7 @@ elseif strcmp(Quantity ,'Cfint') || strcmp(Quantity ,'cfint')
         plot( sL, sol.CI_L );
         legend('suction side','pressure side','location','best'); 
     end
-
-    
-elseif strcmp(Quantity ,'Cf') || strcmp(Quantity ,'cf')
-    %------------------------- Cf   -----------------------------------------------
-    figure
-    hold on
-    title('wall friction coefficient normalized with U')
-    xlabel(xstr)
-    ylabel( ' C_f=2 \tau_w / \rho U^2 ' )
-    
-    if section<4
-        plot( x(ind), sol.Cf(ind) );
-    else
-        plot( x(ind1), sol.Cf(ind1) );
-        plot( x(ind2), sol.Cf(ind2) );
-        if section==4
-            legend('suction side','pressure side','location','best'); 
-        else
-             legend('suction side','pressure side / wake','location','best'); 
-        end
-    end
-    
-elseif strcmp(Quantity ,'Cp') || strcmp(Quantity ,'cp')
-    %------------------------- Cp   -----------------------------------------------
-    figure
-    hold on
-    title('pressure coefficient')
-    xlabel(xstr)
-    ylabel( ' C_p=1 - U^2 /U_\infty^2 ' )
-    
-    if section<4
-        plot( x(ind), sol.Cp(ind) );
-    else
-        plot( x(ind1), sol.Cp(ind1) );
-        plot( x(ind2), sol.Cp(ind2) );
-        if section==4
-            legend('suction side','pressure side','location','best'); 
-        else
-             legend('suction side','pressure side / wake','location','best'); 
-        end
-    end
-    
-    
+    plotted=true;    
 elseif strcmp(Quantity ,'delta') 
     %------------------------- delta  -----------------------------------------------
     figure
@@ -153,160 +99,82 @@ elseif strcmp(Quantity ,'delta')
         plot( x(ind1), sol.T(ind1) ,'b --');
         plot( x(ind2), sol.T(ind2) ,'r --');
         legend('$\delta_1$ suction side','$\delta_1$ pressure side','$\delta_2$ suction side','$\delta_2$ pressure side','location','best'); 
-    end    
-    
-    
-elseif strcmp(Quantity ,'U') || strcmp(Quantity ,'u')
-    %------------------------- U  -----------------------------------------------
-    figure
-    hold on
-    title('boundary layer edge velocity')
-    xlabel(xstr)
-    ylabel( ' U ' )
-    
-    if section<4
-        plot( x(ind), sol.U(ind) );
-    else
-        plot( x(ind1), sol.U(ind1) );
-        plot( x(ind2), sol.U(ind2) );
-        if section==4
-            legend('suction side','pressure side','location','best'); 
-        else
-             legend('suction side','pressure side / wake','location','best'); 
-        end
     end  
-
-    
-elseif strcmp(Quantity ,'CD') || strcmp(Quantity ,'cD')
-    %------------------------- CD  -----------------------------------------------
-    figure
-    hold on
-    title('Dissipation coefficient')
-    xlabel(xstr)
-    ylabel( ' C_D ' )
-    
-    if section<4
-        plot( x(ind), sol.CD(ind) );
-    else
-        plot( x(ind1), sol.CD(ind1) );
-        plot( x(ind2), sol.CD(ind2) );
-        if section==4
-            legend('suction side','pressure side','location','best'); 
-        else
-             legend('suction side','pressure side / wake','location','best'); 
-        end
-    end     
-    
-elseif strcmp(Quantity ,'D') 
-    %------------------------- D  -----------------------------------------------
-    figure
-    hold on
-    title('Dissipation integral')
-    xlabel(xstr)
-    ylabel( ' D ' )
-    
-    if section<4
-        plot( x(ind), sol.CD(ind).*sol.U(ind).^3 );
-    else
-        plot( x(ind1), sol.CD(ind1).*sol.U(ind1).^3 );
-        plot( x(ind2), sol.CD(ind2).*sol.U(ind2).^3 );
-        if section==4
-            legend('suction side','pressure side','location','best'); 
-        else
-             legend('suction side','pressure side / wake','location','best'); 
-        end
-    end     
-    
-elseif strcmp(Quantity ,'H12') 
-    %------------------------- H12  -----------------------------------------------
-    figure
-    hold on
-    title('Shapeparameter H12')
-    xlabel(xstr)
-    ylabel( ' H_1_2 ' )
-    
-    if section<4
-        plot( x(ind), sol.HK(ind) );
-    else
-        plot( x(ind1), sol.HK(ind1) );
-        plot( x(ind2), sol.HK(ind2) );
-        if section==4
-            legend('suction side','pressure side','location','best'); 
-        else
-             legend('suction side','pressure side / wake','location','best'); 
-        end
-    end      
-    
-    
-elseif strcmp(Quantity ,'H32') 
-    %------------------------- H32  -----------------------------------------------
-    figure
-    hold on
-    title('Shapeparameter H32')
-    xlabel(xstr)
-    ylabel( ' H_3_2 ' )
-    
-    if section<4
-        plot( x(ind), sol.HS(ind) );
-    else
-        plot( x(ind1), sol.HS(ind1) );
-        plot( x(ind2), sol.HS(ind2) );
-        if section==4
-            legend('suction side','pressure side','location','best'); 
-        else
-             legend('suction side','pressure side / wake','location','best'); 
-        end
-    end        
-    
- elseif strcmp(Quantity ,'Ret') || strcmp(Quantity ,'ReT')
-    %------------------------- Ret  -----------------------------------------------
-    figure
-    hold on
-    title('momentumthickness based Reynolds-number')
-    xlabel(xstr)
-    ylabel( ' Re_T ' )
-    
-    if section<4
-        plot( x(ind), sol.Ret(ind) );
-    else
-        plot( x(ind1), sol.Ret(ind1) );
-        plot( x(ind2), sol.Ret(ind2) );
-        if section==4
-            legend('suction side','pressure side','location','best'); 
-        else
-             legend('suction side','pressure side / wake','location','best'); 
-        end
-    end     
-  
-    
-     elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q')
-    %------------------------- q  -----------------------------------------------
-    figure
-    hold on
-    title('momentumthickness based Reynolds-number')
-    xlabel(xstr)
-    ylabel( ' q ' )
-    
-    if section<4
-        plot( x(ind), sol.m(ind) );
-    else
-        plot( x(ind1), sol.m(ind1) );
-        plot( x(ind2), sol.m(ind2) );
-        if section==4
-            legend('suction side','pressure side','location','best'); 
-        else
-            legend('suction side','pressure side / wake','location','best'); 
-        end
-    end   
-    
+    plotted=true;
 end
+
+
+% determine title, y-axis label and y quantity
+if strcmp(Quantity ,'tau') || strcmp(Quantity ,'Tau')
+    titlestr='Wall shear stress';
+    ystr=' \tau_w / \rho U_\infty^2 ';
+    y_arr=sol.tau;
+elseif strcmp(Quantity ,'Cf') || strcmp(Quantity ,'cf')
+    titlestr='wall friction coefficient normalized with U';
+    ystr=' C_f=2 \tau_w / \rho U^2 ';
+    y_arr=sol.cf;
+elseif strcmp(Quantity ,'Cp') || strcmp(Quantity ,'cp')
+    titlestr='pressure coefficient';
+    ystr=' C_p=1 - U^2 /U_\infty^2 ';
+    y_arr=sol.Cp;    
+elseif strcmp(Quantity ,'U') || strcmp(Quantity ,'u')    
+    titlestr='boundary layer edge velocity';
+    ystr='U';
+    y_arr=sol.U;
+elseif strcmp(Quantity ,'CD') || strcmp(Quantity ,'cD')   
+    titlestr='Dissipation coefficient';
+    ystr= 'C_D';
+    y_arr=  sol.CD;  
+elseif strcmp(Quantity ,'D') 
+    titlestr='Dissipation integral';
+    ystr=' D ';
+    y_arr=  sol.CD.*sol.U.^3 ;    
+elseif strcmp(Quantity ,'H12')     
+    titlestr='Shapeparameter H12';
+    ystr=' H_1_2 ' ;
+    y_arr=  sol.HK; 
+elseif strcmp(Quantity ,'H32')     
+    titlestr='Shapeparameter H32';
+    ystr=' H_3_2 ' ;
+    y_arr=  sol.HS;     
+elseif strcmp(Quantity ,'Ret') || strcmp(Quantity ,'ReT')
+    titlestr='Shapeparameter H32';
+    ystr=' Re_T ' ;
+    y_arr= sol.Ret;     
+elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q')    
+    titlestr='source contribution';
+    ystr=' q ' ;
+    y_arr= sol.m; 
+end
+    
+    
+if ~plotted
+   figure 
+   hold on
+   title(titlestr) 
+   xlabel(xstr)
+   ylabel(ystr)
+    if section<4
+        plot( x(ind), y_arr(ind) );
+    else
+        plot( x(ind1), y_arr(ind1) );
+        plot( x(ind2), y_arr(ind2) );
+    end
+   if section>3     
+        legend(legendstr,'location','best');  
+   end
+end
+
 
 % limits
-if section<4
-    xlim([min(x(ind)),max(x(ind))])
-else
-    xlim([min(x(ind2)),max(x(ind2))])
+if ~(strcmp(Quantity ,'Cfint') || strcmp(Quantity ,'cfint'))
+    if section<4
+        xlim([min(x(ind)),max(x(ind))])
+    else
+        xlim([min(x(ind1)),max(x(ind2))])
+    end
 end
+
 %-------------------------------------------------------------------------------------------------------------------------
 
 % % plot "thicked" shape
