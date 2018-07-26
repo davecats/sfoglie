@@ -70,6 +70,8 @@ else % -> Thwaite
     sol.HK(Nle)=2.2;
 end
 
+% solves EQ from stagnation point to first node to improve the starting
+% Node values
 [ sol.T(prf.Nle-1), sol.D(prf.Nle-1) ] = ImproveStartNodeSol( nu, sol.U(prf.Nle-1),prf.LE1,sol.Vb(prf.Nle-1),Ts,Ds);
 [ sol.T(prf.Nle)  , sol.D(prf.Nle)   ] = ImproveStartNodeSol( nu, sol.U(prf.Nle)  ,prf.LE2,sol.Vb(prf.Nle)  ,Ts,Ds);
 
@@ -82,6 +84,9 @@ sol.Ret(prf.Nle-1)=sol.T(prf.Nle-1)*sol.U(prf.Nle-1)/nu;
 
 sol.HK(prf.Nle) =sol.D(prf.Nle)/sol.T(prf.Nle);
 sol.Ret(prf.Nle)=sol.T(prf.Nle)*sol.U(prf.Nle)/nu;
+
+
+%     separatly integrate the boundary layers of suction and pressure side as well as wake
 
 %  suction side
 %------------------------------------------------------------------------------------
@@ -99,7 +104,7 @@ sol.Ret(prf.Nle)=sol.T(prf.Nle)*sol.U(prf.Nle)/nu;
 % wake
 %------------------------------------------------------------------------------------
 
-
+% initial conditions for the wake
 sol.T(N+1)=sol.T(1)+sol.T(N);
 sol.D(N+1)=sol.D(1) + sol.D(N) + prf.gap; 
 sol.HK(N+1)=(sol.D(N+1)-prf.gap)/sol.T(N+1); % TE gap does not go into shape parameter
@@ -108,7 +113,7 @@ sol.Ret(N+1)=sol.T(N+1)*sol.U(N+1)/nu;
 sol = walkBoundary(prf,wake,sol,flo,eng,3);
 
 
-%mass defect
+% mass defect
 sol.m=sol.U.*sol.D;
 
 
@@ -116,7 +121,7 @@ sol.m=sol.U.*sol.D;
 sol.CL=getCL(prf,sol.U,flo.alfa,flo.Uinfty);
 
 
-% final values
+% final values of the modeled quantities Cf, CD and HS
 indL=(sol.iTran(1)+1:sol.iTran(2)-1); % laminar node indizes
 indT=[1:sol.iTran(1) , sol.iTran(2):prf.N]; % wake node indizes
 indW=prf.N+1:prf.N+wake.N; % turbulent node indizes

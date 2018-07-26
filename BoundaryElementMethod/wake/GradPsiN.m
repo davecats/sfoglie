@@ -1,6 +1,6 @@
 function [ Cg, Cq ] = GradPsiN( prf,wake )
-%GRADPSIG  calculates the coefficients Cq_ij and Cg_ij for velocity U=grad(Psi) \cdot n for
-%          i=1,..,Nw ;
+%GRADPSIG  calculates the coefficients Cq_ij and Cg_ij for velocity
+%U=grad(Psi) \cdot n for loading points on the wake i= N + 1,..,N + Nw ;
 
 
 ejx= prf.panels.e(1,:);
@@ -11,10 +11,13 @@ ejy= prf.panels.e(2,:);
 nix=wake.nn(1,:)';
 niy=wake.nn(2,:)';
 
-% %k1=n1i*e1j + n2i*e2j =dX_dn
+% derivate of the relativ vectors of the i-th loading point in direction of
+% the j-th panel normal vector
+
+% %k1=n1_i*e1_j + n2_i*e2_j = dX / dn
 k1=  nix*ejx +  niy*ejy ;
 
-% %k2=n2i*e1j - n1i*e2j
+% %k2=n2_i*e1_j - n1_i*e2_j = dY / dn
 k2=  niy*ejx -  nix*ejy;
 
 
@@ -25,7 +28,7 @@ NW=length(wake.x);
 
 [X1,X2,Y]=GetLocalRelCoord(wake.x,wake.y,prf);
 
-
+% square of norm of relativ vectors
 r1=X1.^2 + Y.^2; % r^2
 r2=X2.^2 + Y.^2;
 
@@ -42,10 +45,13 @@ t2=atan2(sgn.*X2,sgn.*Y) + pi/2*(1-sgn);
 % circulation
 %----------------------------------------------------------------
 
+% create the matrix of L to fit dimensions
 LM=ones(NW,1)*L;
+
 pp= X1.*lnr1 - X2.*lnr2 - LM + Y.*(t1-t2);
 pm= ( (X1+X2).*pp + r2.*lnr2 - r1.*lnr1 + 0.5*(X1.^2 - X2.^2) )./LM;
 
+% derivates
 dpm_dX1 = ( (X2-X1).* lnr1 + pp - pm )./LM;
 dpm_dX2 = ( (X2-X1).* lnr2 + pp + pm )./LM;
 dpm_dY  = ( (X1+X2).* (t1-t2) + 2*Y.*(lnr2-lnr1) )./LM;
@@ -76,9 +82,9 @@ Cg(:,end)=Cg(:,end) - TE/2;
 
 
 % source
-%---------------------------
+%----------------------------------------------------------------
 
-% also include wake part j=1,..,N +NW
+% also include wake part j=1,..,N +NW since sources also occur there
 [X1w,X2w,Yw]=WakeRelCoord(wake.x,wake.y,wake);
 
 
@@ -103,10 +109,10 @@ lnr2w(S2)=0;
 t2w(S2)=0;
 
 
-% %k1=n1i*e1j + n2i*e2j =dX_dn
+% %k1=n1i*e1j + n2i*e2j = dX / dn
 k1w=  nix*wake.e(1,:) +  niy*wake.e(2,:) ;
 
-% %k2=n2i*e1j - n1i*e2j
+% %k2=n2i*e1j - n1i*e2j = dY / dn
 k2w=  niy*wake.e(1,:) -  nix*wake.e(2,:);
 
 
@@ -119,8 +125,11 @@ t1w=t1w-corw;
 t2w=t2w-corw;
 
 % piecewise linear ansatz
+
+% j=N + 1,...,N + Nw
 Cqwake= Cqlin(X1w,X2w,Yw,r1w,r2w,lnr1w,lnr2w,t1w,t2w,corw,k1w,k2w, wake.L );
 
+% j=1,...,N
 % without TE -> TE source is part of gamma
 CqFoil= Cqlin(X1(:,1:end-1),X2(:,1:end-1),Y(:,1:end-1),r1(:,1:end-1),r2(:,1:end-1),lnr1(:,1:end-1),lnr2(:,1:end-1),...
                 t1(:,1:end-1),t2(:,1:end-1),cor(:,1:end-1),k1(:,1:end-1),k2(:,1:end-1), prf.panels.L(1:end-1) );

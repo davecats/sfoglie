@@ -1,7 +1,10 @@
 function [sT, der ] = FindTransitionpoint( flo, n, T, D,U,s1,h, mode )
 %FINDTRANSITIONPOINT Finds the exakt transition point on the panel where
-%                    transition occurs (n2>nkrit && n1<nkrit) and calculate
-%                    it´s derivates in respect to the variables U,D,T and n
+%transition occurs (n2>nkrit && n1<nkrit) and calculate its derivates in
+%respect to the variables U,D,T and n
+% mode: defines the approximative differnce scheme for the derivate dn/ds used on the transition panel
+%       mode=1: (n2-n1)/(s2-s1) \approx  n'(sT)   -> second order scheme (default)
+%       mode=2: (nkrit-n1)/(sT-s1) \approx n'(s1) -> first order scheme (more stable)
 
 
 nkrit=flo.nkrit;
@@ -99,7 +102,7 @@ if mode == 1
         k=k+1;
     end
     
-    % if weigthening factors don´t make sense -> try 1. order method
+    % if weigthening factors donï¿½t make sense -> try 1. order method
     if w1>1 || w2>1 || w1<0 ||w2<0
         [sT, der ] = FindTransitionpoint( flo, n, T, D,U,s1,h, 2 );
         return;

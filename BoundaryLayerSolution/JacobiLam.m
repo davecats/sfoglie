@@ -1,7 +1,8 @@
 function [ f1,f2,der] = JacobiLam( T,U,Vb,H,Ret,h,s1,nu,pressureTerm)
-%JACOBILAM          calculates the funtcion value and the derivates for Newton method
-%                   of the momentum EQ and the shape parameter EQ in
-%                   laminar case for start and end point of each intervall
+%JACOBILAM          ccalculates the funtcion value and the derivates of
+%                   laminar part  for the Newton method.
+%                   f1: momentum EQ 
+%                   f2: shape parameter EQ
 %       Variables:  T : momentum thicknes
 %                   U : tangential velocity at boundary edge
 %                   Vb: normal velocity (uniform blowing)
@@ -101,8 +102,8 @@ slog  = log(s2./s1); % substitute h= log(s2/s1) * sM
 
 %--------------------------------------------------------------------------------
 % Set up the Equations and the derivates for the Newton System
-% momentum Equation divided by T and multiplied with h
-% shape Parameter Equation divided by H32 and multiplied with h
+% momentum Equation: divided by T and multiplied with h
+% shape Parameter:   Equation divided by H32 and multiplied with h
 %--------------------------------------------------------------------------------
 
 

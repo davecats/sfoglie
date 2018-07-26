@@ -109,6 +109,7 @@ indB2= find( abs(VbL)>1e-7 );
 
 
 legendstr={'without blowing','with blowing'};
+xstr='x';
 
 if strcmp(Quantity ,'Cf') || strcmp(Quantity ,'CF')|| strcmp(Quantity ,'tau')|| strcmp(Quantity ,'Tau')
     titlestr='wall shear stress';
@@ -125,7 +126,7 @@ elseif strcmp(Quantity ,'H12')
     ystr=' H_1_2 ';
     yNo=sol.HK;
     yBlow=solB.HK;
-elseif strcmp(Quantity ,'H12') 
+elseif strcmp(Quantity ,'H32') 
     titlestr='Shape parameter';
     ystr=' H_3_2 ';
     yNo=sol.HS;
@@ -166,7 +167,7 @@ if section==1
 elseif section==2
     ind=prf.Nle:prf.N;
 end
-xstr='x';
+
 
 %upper limit
 upl= max([yNo(ind);yBlow(ind)])*1.05;

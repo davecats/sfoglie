@@ -24,7 +24,7 @@ flo.vi = flo.Uinfty*sin(flo.alfa);
 % Calculate NACA profile nodes
 prf = naca4(prf);
 
-% import profile Nodes
+% import profile Nodes in case of a given list
 % data=load('e387_N160.txt');
 % prf.nodes.X=transpose(data(:,1));prf.nodes.Y=transpose(data(:,2));
 % prf.N=length(data(:,1)); clear data
@@ -54,7 +54,7 @@ if prf.sharpTE; prf.xL=[prf.xL,prf.panels.X(2,end) ]; end
 %-------------------------------------------------------------------------
 
 % calculate wake node position , done by integrating 
-%  the streamline throug the TE of inviscid solution
+%  the streamline through the TE of inviscid solution
 flo.wake=GetWakeStreamline(flo,prf,eng.NW);
 
 
@@ -66,14 +66,18 @@ flo.wake=GetWakeStreamline(flo,prf,eng.NW);
 
 % source influence of airfoil nodes -> i=1,..,N ; j=1,..,N
 CoeffMatrix.B=Qlin(prf.nodes.X', prf.nodes.Y' ,prf); % piecewise linear ansatz
-% source influence of wake nodes -> i=1,..,N ; j=N+1,..,N+NW
+% source influence of wake nodes -> i=1,..,N ; j=N + 1,..,N + NW
 CoeffMatrix.Bw=Qlin(prf.nodes.X', prf.nodes.Y',flo.wake,true); 
+% total B-matrix
 CoeffMatrix.Bges=[CoeffMatrix.B, CoeffMatrix.Bw]; 
-CoeffMatrix.Ai=inv(flo.Ages);
+% inverted airfoil part
+CoeffMatrix.Ai=inv(flo.Ages); 
 CoeffMatrix.A=flo.A;
+% A-matrix with included Kutta-condition
 CoeffMatrix.Ages=flo.Ages;
 % invert airfoil node Coeffs to get Coefficient for Boundary edge velocity U
 CoeffMatrix.Btilde=-CoeffMatrix.Ai(1:prf.N,1:prf.N)*CoeffMatrix.Bges;
+
 if prf.sharpTE
     % delete influence of dummy TE panel for sharp TEs
     CoeffMatrix.Btilde(prf.N,prf.N+1:prf.N+flo.wake.N)=0;
@@ -82,7 +86,7 @@ end
 % % Source influence matrix for wake nodes (C)
 %  ------------------------------------------
 
-% influence of airfoil nodes -> i=N+1,..,N+NW ; j=1,..,N+NW
+% influence of airfoil nodes -> i=N + 1,..,N + NW ; j=1,..,N + NW
 [CoeffMatrix.Cg, CoeffMatrix.Cq] = GradPsiN( prf,flo.wake );
 % add gamma influence on Cq
 CoeffMatrix.Cq2= CoeffMatrix.Cq - CoeffMatrix.Cg*CoeffMatrix.Btilde;

@@ -1,5 +1,5 @@
 function M = Qlin( xi, eta, handle,IsWake)
-%QLIN  calculates the airfoil panel Coefficients Bij for Loadingpoint xi
+%QLIN  calculates the airfoil panel Coefficients Bij for Loading point xi
 %       input:
 %       -  xi = xi_i , Loadingpoint x-coordinate
 %       -  eta=eta_i , Loadingpoint y-coordinate

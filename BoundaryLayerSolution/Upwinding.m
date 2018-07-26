@@ -1,5 +1,5 @@
 function [ upw, dupw_dH1,dupw_dH2] = Upwinding(H1,H2,IsWake)
-%UPWINDING Sets the upwind parameter vor shape parameter Equation
+%UPWINDING Sets the upwind parameter for shape parameter Equation
 %          upw=0.5 -> central differences
 %          upw=1   -> forward differences
 

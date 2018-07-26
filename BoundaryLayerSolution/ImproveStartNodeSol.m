@@ -1,5 +1,7 @@
 function [ Ts, Ds ] = ImproveStartNodeSol( nu,U,L,Vb, T, D)
-%IMPROVESTARTNODESOL improves the start node solution
+%IMPROVESTARTNODESOL improves the start node solution solving the momentum and
+%cinetic energy equation for the intervall between Stagnation point and
+%first boundary layer node. 
 
 
 if nargin==4 % Eppler start values
@@ -22,7 +24,7 @@ while res>1e-9 && k<40
     
     res=max(abs( [dT/Ts,dD/Ds] ));
     % under relaxation for big changes
-    if res>0.3; Rel=0.3/res; else; Rel=1; end            
+    if res>0.3; Rel=0.3/res; else Rel=1; end            
     % update values
     Ts=Ts + Rel*dT;
     Ds=Ds + Rel*dD;

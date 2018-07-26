@@ -1,14 +1,23 @@
 function [X1,X2,Y] =GetLocalRelCoord(xi,eta,prf,withoutTE)
-%EVALUATEBOUNDARYINT calculates the relativ coordinates in local panel coordinate system for airfoil panels
-%                    xi:  column vector with Loadingpoint x-coordinate
-%                    eta: column vector with Loadingpoint y-coordinate
-%                    withoutTE: if comitted the trailing edge part is left
+%GetLocalRelCoord calculates the relativ coordinates in local panel coordinate system for airfoil panels
+%input
+% xi:  column vector with Loadingpoint x-coordinate
+% eta: column vector with Loadingpoint y-coordinate
+% withoutTE: leaves the trailing edge part 
+%output
+% X1_ij= ( xi_i - x1_j ) \cdot e_j                   distance of Loading point and start node in x-direction of the local coord system
+% X2_ij= ( xi_i - x2_j ) \cdot e_j = L_j - X1_ij
+% Y_ij = ( xi - x1 ) \cdot n                         distance of Loading point to panel in y-direction of the local coord system
+
+
+
 
 n=prf.panels.n; % normal vector of each panel
 e=prf.panels.e; % tangent vector of each panel
 N=prf.N; % number of nodes
 
-M=length(xi);
+M=length(xi); % number of loading points
+
 % Panel node 1 and 2 coordinates
 xp1=prf.panels.X(1,:);% 1- start point of panel
 yp1=prf.panels.Y(1,:);

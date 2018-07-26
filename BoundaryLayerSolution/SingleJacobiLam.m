@@ -1,6 +1,9 @@
 function [ f1,f2,df_dT,df_dD ,df_dU, df_dh] = SingleJacobiLam( T,U,Vb,H,Ret,h,s1,diffU,nu,pressureTerm)
-%SINGLEJACOBILAM    calculates the funtcionvalue and the derivates for Newton method
-%                   of the momentum EQ and the shape parameter EQ in laminar case of known "1" values
+%SINGLEJACOBILAM    calculates the funtcion value and the derivates of
+%                   laminar part  for the Newton method, when "1" values 
+%                   are known and it is only solved for the "2" values
+%                   f1: momentum EQ 
+%                   f2: shape parameter EQ 
 %       Variables:  DI: displacementthicknes
 %                   T : momentum thicknes
 %                   U : tangential velocity at boundary edge

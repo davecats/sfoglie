@@ -1,6 +1,6 @@
 function [ out ] = AngleIntervall( in )
-%ANGLEINTERVALL     transforms an angle between -pi and pi to one between 0 and 2pi
-%                   vice versa
+%ANGLEINTERVALL     transforms an angle in the intervall of [-pi,pi] to one
+%                   in [0,2pi] vice versa
 
 % angle between -pi and pi
 if isempty(find(in<0,1))== false

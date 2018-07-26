@@ -1,8 +1,6 @@
 function [dpsi_dxi,dpsi_deta] = GradPsi(xi,eta, prf )
-%GRADPSI 
-
-
-
+%GRADPSI calculates the gradient of streamfunction psi in respect to
+%loading point coordinates xi and eta
 
 L=prf.panels.L; 
 N=length(xi);

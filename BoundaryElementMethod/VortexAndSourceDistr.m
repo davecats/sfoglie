@@ -1,9 +1,8 @@
 function [ A,B] = VortexAndSourceDistr( prf )
 %VORTEXANDSOURCEDISTR  calculates the Matrix of source and vorticity
 %                      contributions for the collocation method
-%                      line index i: Index of equation -> Loading point at i-th node
-%                      column index j: Index for influence of j-th node
-%                                      value to boundary integral
+%                      line index i:    Index of equation -> Loading point at i-th node
+%                      column index j:  Index for influence of j-th node value to boundary integral
 
 
 % with TE panel

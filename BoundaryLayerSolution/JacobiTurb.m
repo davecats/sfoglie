@@ -1,6 +1,9 @@
 function [ f1,f2,f3,der ] = JacobiTurb( DI, T,Ct,U,Vb,H,Ret,h,s1,IsWake,Wgap,nu,pressureTerm)
-%SINGLEJACOBITURB   calculates the funtcion value and the derivates for Newton method
-%                   of the momentum EQ and the shape parameter EQ in turbulent case  for start and end point of each intervall
+%SINGLEJACOBITURB   calculates the funtcion value and the derivates of
+%                   turbulent part  for the Newton method.
+%                   f1: momentum EQ 
+%                   f2: shape parameter EQ 
+%                   f3: lag entrainement EQ (Ctau)    
 %       Variables:  DI: displacement thickness
 %                   T : momentum thickness
 %                   Ct: max shear stress coefficient Ctau

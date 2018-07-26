@@ -1,9 +1,13 @@
 function sol= walkBoundary(prf,wake,sol,flo,eng,section)
-%WALKBOUNDARY integrates the Boundary Layer equations with the pre set initial value and velocity vector 
-%             using finite differences method for discretisation and solves the resulting nonlinear equations
-%             with a Newton Method for each integration step.
-%             Looks for seperation with the Hartree condition (H12 > Hsep, beta<-0.199) 
-%             If seperation occurs presets plausible H values and adjust velocity
+%WALKBOUNDARY   integrates the Boundary Layer equations with the pre set
+%               initial value and velocity vector using finite differences
+%               method for discretisation and solves the resulting
+%               nonlinear equations with a Newton Method for each
+%               integration step.
+%               Looks for seperation occuring when H12 > Hsep and switch to
+%               an inverse method adjusting U in order to restrict the
+%               change in H12
+%
 %             section   1: suctionside
 %                       2: pressure side
 %                       3: wake

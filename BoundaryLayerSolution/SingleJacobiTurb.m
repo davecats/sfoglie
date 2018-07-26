@@ -1,6 +1,10 @@
 function [ f1,f2,f3,df_dT,df_dD,df_dCt,df_dU ] = SingleJacobiTurb( DI,T,Ct,U,Vb,H,Ret,h,s1,diffU,IsWake,Wgap,nu,pressureTerm)
-%SINGLEJACOBITURB    calculates the funtcionvalue and the derivates for Newton method
-%                   of the momentum EQ and the shape parameter EQ in turbulent case of known "1" values
+%SINGLEJACOBITURB   calculates the funtcion value and the derivates of
+%                   turbulent part  for the Newton method, when "1" values 
+%                   are known and it is only solved for the "2" values
+%                   f1: momentum EQ 
+%                   f2: shape parameter EQ 
+%                   f3: lag entrainement EQ (Ctau)
 %       Variables:  DI: displacementthicknes
 %                   T : momentum thicknes
 %                   Ct: max shear stress coefficient Ctau

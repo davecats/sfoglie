@@ -1,6 +1,6 @@
 function [n, TranU,TranL] = IntegrateAmplification(prf,sol,flo)
 %INTEGRATEAMPLIFICATION     integrates the amplification factor for each
-%                           Boundary node with known shape parameter and Ret values
+%boundary node with known shape parameter and Ret values
 
 nkrit=flo.nkrit;
 

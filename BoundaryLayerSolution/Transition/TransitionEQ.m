@@ -1,18 +1,23 @@
 function [ f, erg,sT ] = TransitionEQ( flo,eng, n, T, D,U,Vb,s1,h,C2,sF ,IsForced)
 %TRANSITIONEQ   gives the equationsystem for the transition panel
-%               -> uses sum of laminar and turbulent part for momentum and shapeparameter equation
+%               -> uses sum of laminar and turbulent part for momentum and shape parameter equation
 %               -> uses Ctau Equation only for turbulent part
-
+%               -> the transition location and the correspondig variables are
+%               calculated using the weightened values between "1" and "2"
+%               location from the laminar part.
 
 nu=flo.nu;
 
 if nargin==10; IsForced=false;  end
 
+% use second tranEQ version if it is forced
 if eng.tranEQ>2 && ~IsForced
    [ f, erg,sT ] = TransitionEQ2( flo,eng,n, T, D,U,Vb,s1,h, C2) ; return;    
 end
 
-s2=s1+h;
+s2=s1 + h;
+
+%                                   get transition point
 
 if IsForced
     sT= sF;
@@ -142,7 +147,7 @@ Rel= Tl.*Ul/nu;
 fl=[f1;f2];
 
 
-% det derivates in respect to 1 and 2 variables
+% get derivates in respect to 1 and 2 variables
 
 df1_dT1L=der.df1_dT(1) + der.df1_dT(2)*dTT_dT1 + der.df1_dD(2)*dDT_dT1 + der.df1_dU(2)*dUT_dT1 + der.df1_ds(2)*dsT_dT1 ;
 df1_dD1L=der.df1_dD(1) + der.df1_dT(2)*dTT_dD1 + der.df1_dD(2)*dDT_dD1 + der.df1_dU(2)*dUT_dD1 + der.df1_ds(2)*dsT_dD1 ;

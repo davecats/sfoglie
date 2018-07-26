@@ -1,8 +1,8 @@
 function [ Bwake, Cqwake ] = WakeSourceCoeffs( wake,prf )
 %WAKESOURCECOEFFS   calculates the influence of wake sources to all equations:
-%                      Bwake=Bij,  i=1,..,N j=N+1,..,N+NW
+%                      Bwake=Bij,  i=1,..,N j= N + 1,...,N + NW
 %                           -> influence of wake sources on airfoil node Eqs
-%                      Cqwake=Cij,  i=N+1,..,N+NW j=N+1,..,N+NW
+%                      Cqwake=Cij,  i=N + 1,...,N + NW j= N + 1,...,N + NW
 %                           -> influence of wake sources on wake node Eqs
 
 
@@ -52,10 +52,10 @@ S2= find(r2<1e-11);
 lnr2(S2)=0;
 t2(S2)=0;
 
-% k1=e1*n1+e2*n2
+% k1=e1*n1 + e2*n2
 k1= wake.e(1,:).*wake.n(1,:) +  wake.e(2,:).*wake.n(2,:);
 k1=ones(NW,1)*k1;
-% k2=e1*n2-e2*n1 = - (n1^2 + n2^2)
+% k2=e1*n2 - e2*n1 = - (n1^2 + n2^2)
 k2= wake.e(1,:).*wake.n(2,:) -  wake.e(2,:).*wake.n(1,:);
 k2=ones(NW,1)*k2;
 

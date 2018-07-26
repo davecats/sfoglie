@@ -2,7 +2,7 @@ function [solnew, prf] = NewtonEq( prf,flo,eng,sol,D0,Uinv,pressureCor)
 %NEWTONEQ       sets up the global Newton equationsystem J dz=- f(z) and
 %               solves it iterativly
 %               sol:    initial solution struct
-%               D0:     Coefficients of mass Defekt -> U = Uinv + Dm
+%               D0:     Coefficients of mass Defekt -> U = Uinv + Dm without sign
 %               it:     max number of iteration steps
 
 
@@ -202,18 +202,20 @@ disp(' ')
 % Integral values
 
  if prf.sharpTE
-    [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N-1),solnew.tau(1:prf.N-1),prf.s(1:prf.N-1),prf.nodes.e(:,1:prf.N-1)',...
+    [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N-1),solnew.tau(1:prf.N-1),prf.s(1:prf.N-1),...
                                          prf.nodes.n(:,1:prf.N-1)', flo.alfa, true,solnew.Vb/flo.Uinfty);
  else
 %     [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N),solnew.tau(1:prf.N),prf.s,...
-%                                                 prf.nodes.e',prf.nodes.n',flo.alfa, true,solnew.Vb/flo.Uinfty);
+%                                                   prf.nodes.n',flo.alfa, true,solnew.Vb/flo.Uinfty);
     %include TE Panel contribution
     [solnew.CL,solnew.Cdrag,solnew.Cnu]=IntValues(solnew.Cp(1:prf.N+1),solnew.tau(1:prf.N+1),[prf.s,prf.s(end)+prf.panels.L(end)],...
-                                                [prf.nodes.e,prf.panels.e(:,end)]',[prf.nodes.n,prf.panels.n(:,end)]',...
-                                                flo.alfa, true,solnew.Vb/flo.Uinfty);
+                                                [prf.nodes.n,prf.panels.n(:,end)]',flo.alfa, true,solnew.Vb/flo.Uinfty);
  end
 
-if prf.N<80 % numeric integration for drag gets to inaccurate -> use Squire-Young formula
+% low amount of panels
+% numeric integration for drag gets to inaccurate -> use Squire-Young formula
+if prf.N<80 
+    disp('Coarse discretization of airfoil. Drag is calculated by squire-Young formula instead of integration')
     solnew.Cdrag=DragCoeff(solnew.T(end),solnew.HK(end),solnew.U(end)/flo.Uinfty, 1 );
 end
 

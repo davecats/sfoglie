@@ -1,7 +1,7 @@
 function [ psi ] = evaluateInviscFieldSol(xi,fld,prf,withoutTE)
 %EVALUATEINVISCFIELDSOL     evaluates the streamfunktion for an arbitrary
 %                           Field point
-%                           if withoutTE is comitted, gamma_TE and q_TE will be neglected 
+%                           if withoutTE is true, gamma_TE and q_TE will be neglected 
 
 
 %---------------------------------------------------

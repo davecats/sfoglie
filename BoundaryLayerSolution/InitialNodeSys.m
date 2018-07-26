@@ -1,5 +1,8 @@
 function [f1,f2, J ] = InitialNodeSys(T,D,U,Vb,h,nu)
-%INITIALNODESYS sets up a Newton System for first Boundary node
+%INITIALNODESYS sets up a Newton System for first Boundary node. The
+%equations are those of the intervall between Stagnation point and
+%first boundary layer node setting all quantities to 0 at the stagnation
+%point and using a backward difference scheme.
 
  
 H=D/T; 

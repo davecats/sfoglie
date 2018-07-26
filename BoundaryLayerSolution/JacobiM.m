@@ -1,6 +1,8 @@
 function [ J, rhs] = JacobiM( prf,flo,eng,sol,Unew,D)
-%JACOBIM        calculates the Jacobimatrix and right hand side for the Newton system 
-%               for solution vector z=[T1,..,TN, C1,.., CN,m1,..,mN]^T 
+%JACOBIM  sets up the whole Jacobimatrix containing the discrete equation
+%of each intervall and the initial conditions. Also calculates the
+%corresponding right hand side for the Newton System
+%The solution vector has the form z=[T1,..,TN, C1,.., CN,m1,..,mN]^T 
 
 
 nu=flo.nu;
@@ -279,9 +281,10 @@ df3_ds(indM,:)=der.df3_ds;
 % switch to m as variable
 %----------------------------------------------------
 
-% save the Indizes of equations and the corresponding values of 1 and 2 nodes
+% save the Indizes of equations and the corresponding values of "1" and "2" nodes
 
-% node indizes
+
+% node indizes save the indices of start ("1") and end nodes ("2")
 % suction side -> 1 and 2 are "switched" when walking in global arc length direction
 Node1= (2:prf.Nle-1);
 Node2= (1:prf.Nle-2);
@@ -295,7 +298,8 @@ Node2=[Node2, (prf.N+2:prf.N+flo.wake.N)  ];
 % Equation index -> no FDM equation for LE panel, TE panel and last wake node -> 9 additional Equations neccessary
 EQ = [(1:prf.Nle-2),(prf.Nle:prf.N-1),(prf.N+1:prf.N + flo.wake.N-1) ];
 
-% different order for Equation System
+% node index has different order than Equation System
+% for each end node ("2") of a intervall, there is an equation
 EQsys= [1:prf.Nle-2, prf.Nle+1:prf.N, prf.N+2:prf.N + flo.wake.N];
 
 % total derivates of equations in respect to m   
@@ -364,6 +368,8 @@ JC3(EQsys,Node2)=JC3(EQsys,Node2) + diag(df3_dC(EQ,2));
 
 % total matrix
 J= zeros(3*Nges,3*Nges);
+
+% indices, where the equation will be placed in the overall matrix
 EQ1= 3*EQsys - 2*ones(size(EQ));
 EQ2= 3*EQsys - ones(size(EQ));
 EQ3= 3*EQsys ;

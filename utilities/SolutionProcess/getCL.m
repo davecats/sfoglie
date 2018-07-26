@@ -33,9 +33,9 @@ end
 
 % transformation in streamwise coordinate System
 %FX=  Fpx*cos(alfa) + Fpy*sin(alfa);
-FY= -Fpx*sin(alfa) + Fpy*cos(alfa);
+CL= -Fpx*sin(alfa) + Fpy*cos(alfa);
 
-CL=FY;
+
 
 
 end

@@ -1,5 +1,5 @@
 function [wake] = GetWakeStreamline( fld,prf,NW )
-%GETWAKESTREAMLINE  calculates the nodes on the wake streamline. 
+%GETWAKESTREAMLINE  calculates the nodes on the wake streamline and the dead air region. 
 %                   uses Newton method to find points with psi=psi0
 %                   NW: number of wake nodes
 
@@ -22,9 +22,11 @@ psi0=fld.psi0;
 % starting step size of wake equals the Panel length of first panel
 h=0.5*( prf.panels.L(1) + prf.panels.L(prf.N-1) );
 
+% Calculate the constant grading factor with a fixed number of nodes and a fixed length
+%   -> set length of wake equal to airfoil chord 
 grading=Grading(h,prf.c,NW);
 
-% guess second wake point 
+% initial guess second wake point -> use previous direction
 guess= xTE + h*s;
 
 xw=zeros(NW,2); xw(1,:)=xTE;
@@ -32,20 +34,23 @@ sw=zeros(1,NW);
 lw=zeros(1,NW-1);
 
 
-for i=1:NW-1 
+for i=1:NW-1 % loop over all wake nodes
     xw(i+1,:)=guess;
   
     %------------- iterate to find Loadingpoint with exact psi=psi0  -------
     res=1;k=0; dpmin=2;noConv=false;
     while res>1e-6 && k<40 % prevent endless loop
+        
+        % evaluate the streamfunction psi at current point
         psi= evaluateInviscFieldSol(xw(i+1,:),fld,prf);
         
-        
+        % get the gradient of psi at current point
         [dg_dx,dg_dy]=GradPsi(xw(i+1,1), xw(i+1,2),prf);
         dpsi_dx=-dg_dx*fld.gamma;
         dpsi_dy=-dg_dy*fld.gamma;
 
         ht=norm(xw(i+1,:)-xw(i,:));
+        
         % Newton-Method
 
         J=[dpsi_dx, dpsi_dy; 2*(xw(i+1,1)-xw(i,1)), 2*(xw(i+1,2)-xw(i,2))];
@@ -53,7 +58,6 @@ for i=1:NW-1
 
         dx=  (f(2)*J(1,2) - f(1)*J(2,2))/( J(1,1)*J(2,2)- J(1,2)*J(2,1) );
         dy=  (f(1)*J(2,1) - f(2)*J(1,1))/( J(1,1)*J(2,2)- J(1,2)*J(2,1) );
-        
         
         
         % relativ difference
@@ -87,6 +91,7 @@ for i=1:NW-1
         xw(i+1,:)= xmin;
     end
     
+    % save point, panel length and arc length
     lw(i)=norm(xw(i+1,:)-xw(i,:));
     delta=xw(i+1,:)-xw(i,:);
     guess= xw(i+1,:) + grading*delta;
@@ -106,6 +111,7 @@ nw=[-ew(2,:);ew(1,:)];
 nwn=(nw(:,1:end-1)+nw(:,2:end))/2;
 nwn=[nw(:,1),nwn, nw(:,end)];
 
+% save in struct
 wake.theta=atan2(ew(1,:),-ew(2,:));
 wake.x=xw(:,1);
 wake.y=xw(:,2);
@@ -122,8 +128,9 @@ if prf.sharpTE
     wake.gap=zeros(size(wake.x));
 else
     % Calculate the dead air region behind the blunt trailing edge for downstream wakepoints
-    AN=prf.ScrossT.*prf.panels.L(end);
-    ZN=1-wake.s/(2.5*AN);
+    AN=prf.ScrossT.*prf.panels.L(end); % TE gap section
+    % Length of dead air region is estimated by 2.5*AN
+    ZN=1-wake.s/(2.5*AN); 
     xp1=prf.nodes.X(2)-prf.nodes.X(1);
     xpN=prf.nodes.X(end)-prf.nodes.X(end-1);
     yp1=prf.nodes.Y(2)-prf.nodes.Y(1);
@@ -132,8 +139,8 @@ else
     D=Cross/sqrt(1-Cross^2);
     D=max(D,-3/2.5);
     D=min(D, 3/2.5);
-    A= 3+2.5*D;
-    B=-2-2.5*D;
+    A= 3 + 2.5*D;
+    B=-2 - 2.5*D;
     wg=zeros(size(wake.x));
     % only if wg>0 there is a dead air at current node, otherwise the approximation gives negative values
     wg(ZN>0)= AN* (A+B*ZN(ZN>0)).*ZN(ZN>0).^2;

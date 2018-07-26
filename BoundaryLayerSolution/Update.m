@@ -1,9 +1,11 @@
 function [solnew,Rel, res,eng] = Update(prf,flo,sol,dT, dc,dm,Uinv,D,eng,k)
-%UPDATE updates the solution from one Newton step and underrelaxes if necessary
+%UPDATE updates the solution from one Newton step and under relaxes if
+%neccessary. Also restrict the solution to reasonable values (H12>1, U<0 ...)
+
+
 
 nu=flo.nu;
 %nkrit=flo.nkrit;
-
 
 Un=Uinv + D*(sol.m+dm);
 

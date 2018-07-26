@@ -1,8 +1,10 @@
 function [ f, erg,sT ] = TransitionEQ2( flo,eng, n, T, D,U,Vb,s1,h, C2,sF , IsForced)
-%TRANSITIONEQ   gives the equationsystem for the transition panel
-%                   different method for determination of transition location
-%               -> uses sum of laminar and turbulent part for momentum and shapeparameter equation
-%               -> uses Ctau Equation only for turbulent part
+%TRANSITIONEQ2   gives the equationsystem for the transition panel.
+% Uses a different method for determination of transition location:
+% The Newton method is solved for the set of laminar formulation of
+% equations 1-3 for the unknown variables TT,DT and sT setting n(sT)=nkrit.
+%for the intervall [sT,s2] the turbulent equations are used.
+
 
 nkrit=flo.nkrit;
 nu=flo.nu;
@@ -26,10 +28,10 @@ else
      k=0;res=1;
     w1= (n(2)-nkrit)/(n(2)-n(1));
     w2= 1 - w1;
-    TT=w1*T(1)+w2*T(2);
-    DT=w1*D(1)+w2*D(2);
-    UT=w1*U(1)+w2*U(2);
-    sT=w1*s1 + w2*s2;
+    TT=w1*T(1)+ w2*T(2);
+    DT=w1*D(1)+ w2*D(2);
+    UT=w1*U(1)+ w2*U(2);
+    sT=w1*s1  + w2*s2;
     nT=nkrit;
     hL=sT-s1;
     
@@ -40,7 +42,8 @@ else
         TL=[T(1);TT];
         DL=[D(1);DT];
         UL=[U(1);UT];
-        nL=[n(1);nT];
+        %nL=[n(1);nT]; % OLD
+        nL=[n(1);nkrit];
         HL=DL./TL;
         ReL=UL.*TL/nu;
         
@@ -51,18 +54,31 @@ else
         
         J=[der.df1_dT(2),der.df1_dD(2),0        ,der.df1_ds(2);...  % momentum EQ
            der.df2_dT(2),der.df2_dD(2),0        ,der.df2_ds(2);...  % kin Energy EQ
-           df3_dT(2)    ,df3_dD(2)    ,df3_dn(2),df3_ds(2) ;...     % Ampl EQ
-           0            ,0            ,1     ,0];% force n2=nkrit
-        rhs=-[f1;f2;f3;nT-nkrit];
-        
+           df3_dT(2)    ,df3_dD(2)    ,df3_dn(2),df3_ds(2) ];     % Ampl EQ
+       
+        rhs=-[f1;f2;f3];
+              
         dz=J\rhs;
         
         res=max(abs( [dz(1)/TT,dz(2)/DT,dz(3)/nT,dz(4)/hL] ));
+
+%------------------   OLD  -------------
+%         J=[der.df1_dT(2),der.df1_dD(2),0        ,der.df1_ds(2);...  % momentum EQ
+%            der.df2_dT(2),der.df2_dD(2),0        ,der.df2_ds(2);...  % kin Energy EQ
+%            df3_dT(2)    ,df3_dD(2)    ,df3_dn(2),df3_ds(2) ;...     % Ampl EQ
+%            0            ,0            ,1     ,0];% force n2=nkrit
+%        rhs=-[f1;f2;f3;nT-nkrit];
+%         
+%         dz=J\rhs;
+%         
+%         res=max(abs( [dz(1)/TT,dz(2)/DT,dz(3)/nT,dz(4)/hL] ));
+%------------------
+
         % under relaxation for big changes
         if res>0.3; rel=0.3/res; else rel=1; end  
         TT = TL(2) + rel*dz(1);
         DT = DL(2) + rel*dz(2);
-        nT = nL(2) + rel*dz(3);
+        %nT = nL(2) + rel*dz(3); % OLD
         hL = hL    + rel*dz(4);
         
         w2= hL /h;

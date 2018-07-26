@@ -1,7 +1,8 @@
 function [dn,ddn_dT,ddn_dH, ddn_dRet,ddn_dn] = AmplificationDerivate(flo,H,Ret,T,getDerivates,n )
-%AMPLIFICATIONEQ    calculates the approximated derivate of the amplificationfactor
+%AMPLIFICATIONDERIVATE    calculates the approximated derivate of the
+%amplification factor
 %                       dn= n'(s)  =( n(s2)-n(s1) ) /h  ,   h=s2-s1
-%                    and its partial derivates in respect to T, H12 and Ret 
+%and its partial derivates in respect to T, H12 and Ret. 
           
 nkrit=flo.nkrit;
 
@@ -9,6 +10,7 @@ if nargin==4
     getDerivates=false;
 end
 
+% dimensions
 dimP=size(H);
 dim=size(H(1:end-1));
 
@@ -16,11 +18,14 @@ k=1./(H-1);
 B= 2.492*(k).^0.43;
 C=tanh(14*k-9.24);
 
+% logarithmic indifference Reynoldsnumber log_10(Ret_ind)
 Gkrit= B + 0.7*(C+1);
+% actual logarithmic Reynoldsnumber 
 GR=log10(Ret);
 
 
-% zero Amplifikation vor GR < Gkrit
+% disturbances get amplified only for Ret > Ret_ind 
+%  -> otherwise zero Amplifikation
 ind=find(GR > Gkrit-0.08 );
 
 RN=(GR(ind)-(Gkrit(ind)-0.08))/0.16;
@@ -32,7 +37,9 @@ Rtmp=RN(ind2);
 Rf(ind2)=3*Rtmp.^2 - 2*Rtmp.^3;
 %-----------------    
 
+% exponent
 Arg=3.87.*k(ind)-2.52;
+% hole exponential term
 EX= exp(-Arg.^2);
 DA=0.028*(H(ind)-1) - 0.0345*EX;
 %BRG=-20*k(ind);
@@ -40,29 +47,35 @@ Af=-0.05 + 2.7*k(ind)    - 5.5*k(ind).^2 + 3*k(ind).^3 ;%+ 0.1*exp(BRG);
 
 
 A= zeros(dimP);
+% approxiamtion formula for n
 A(ind)= (Af.*DA./T(ind)).*Rf;
 
 % add up the amplification delta
-Am=sqrt( 0.5*(A(1:end-1).^2 + A(2:end).^2) ); % midpoint approximation
+% midpoint approximation for dn/ds
+Am=sqrt( 0.5*(A(1:end-1).^2 + A(2:end).^2) ); 
 
 % addition to make shure that dn/ds>0
 if getDerivates==false || nargin==5
-    n=A;
+    n=A; % use A as an approximation for the amplification exponent n
     %n=zeros(size(A));
 end
 % make shure values are not negativ
 n(n<0)=0;
 
-ARG2=min(20*(nkrit - 0.5*(n(1:end-1)+n(2:end) )) , 20);
+% difference between critical amplification exponent and midpoint value
+ARG2=min(20*(nkrit - 0.5*(n(1:end-1) + n(2:end) )) , 20);
 EXN=ones(dim);
 
 ind3=find(ARG2>0);
+% difference between amplification factor and critical Amplification factor
 EXN(ind3)=exp(-ARG2(ind3));
 
+% add correction term to improve behaviour when n approx n_krit
 add= EXN*0.002./(T(1:end-1)+T(2:end));
 
 dn= (Am + add);
 
+% calculate the derivates of the term if required
 if getDerivates  
     dGkrit_dH= -0.43*B.*k -9.8*k.^2.*(1-C.^2) ;
     dGR_dRet= 1./(2.3025851*Ret);

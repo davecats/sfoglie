@@ -1,8 +1,8 @@
 function sol= Refresh(prf,flo,sol,eng)
 %Refresh goes through the Boundary layer after each Newton iteration to
-%        find the new transition point and force a certain H-U-correlation for the
-%        seperation region
-
+%        find the new transition point and force a certain H-U-correlation
+%        for the seperation region
+     
 
 nkrit=flo.nkrit;
 nu=flo.nu;

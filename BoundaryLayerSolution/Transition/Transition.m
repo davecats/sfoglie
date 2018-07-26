@@ -1,17 +1,18 @@
 function [ Llam, T2,D2,U2,C2, der] = Transition(sec, sol,flo, eng, n, T, D,U,Vb,s1,h)
-%TRANSITION finds transition point on Intervall of transition. Splits Intervall in laminar and turbulent part
-%           and calculates the values of delta1 and delta2 for the transition point and the panels 2 point
+%TRANSITION Integrates the governing equations over the transition panel.
+%The transition point is determined and the panel is split in a laminar and
+%a turbulent part.
 
 
 D2=D(1);
 T2=T(1);
 
-s2=s1+h;
+s2=s1 + h;
 
 if sol.Tripping(sec); tr=true; else  tr=false; end
 
 % initial value for Ctau at 2 node
-C2t=0.03;
+C2t= 0.03;
 
 HK1= D(1)/T(1);
 HKset=false;
