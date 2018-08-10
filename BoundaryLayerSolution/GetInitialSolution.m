@@ -33,7 +33,8 @@ sol.T=zeros(dim);
 sol.D=zeros(dim);
 sol.c=zeros(dim); % vector with amplification factor or Ctau
 
-sol.Vb=Vb;
+sol.Vb=zeros(dim);
+sol.Vb(1:length(Vb))=Vb;
 sol.U=Uinv;
 
 %----------------------------- Set initial values -----------------------

@@ -6,14 +6,14 @@
 %  ------------------
 prf.naca = [4 4 1 2];         %  NACA 4-digit profile 
 prf.noSkew  = true;           %  if true neglects profile skewness
-prf.sharpTE = false;          %  if true modifies NACA prf for shart trailing edge
+prf.sharpTE = false;          %  if true modifies NACA prf for sharp trailing edge
 prf.c = 1;                    %  prf chord length 
 prf.M = 140;                  %  number of control points for each surface
 prf.pmode = 1;                %  panelization mode: 1 (more nodes in middle) 2 (more nodes at LE and TE)
 
 %  Flow
 %  ----
-flo.alfa = 2*pi/180;         %  Angle of attack 
+flo.alfa = 0*pi/180;         %  Angle of attack 
 flo.invisc = false;          %  only inviscid solution 
 flo.Uinfty=1;                %  velocity of outer flow
 flo.Re= 4e5;                 %  Chord Reynoldsnumber
@@ -24,29 +24,35 @@ flo.nkrit= 0.15;%          %  critical amplification exponent for transition
 tri.active=[ false;...         %  tripping on suction side 
              false];           %  tripping on pressure side 
 
-tri.x = [ 0.145;...             %  tripping location on suctoin side
+tri.x = [ 0.145;...            %  tripping location on suction side
           0.29 ]*prf.c;        %  tripping location on pressure side
     
 %  Blowing
 %  --------
-blo.active=false;                 %  activate blowing
+blo.active=false;             % activate blowing
 blo.pressureCor=false;        % include correction term for pressure
 
-% commit midpoint and length to determine blowing regions 
+blo.Mode=2;
+% determines how the blowing regions are set
+% blo.Mode=1 -> vector of start x-coordinates and lengths for both sides
+% blo.Mode=2 -> vector of mid point x-coordinates and lengths for both sides
+% blo.Mode=3 -> Arclength mode 
+
+% Mode 1 and 2
 blo.L= {[0.1]*prf.c;              %  length of blowing area: suction side
         [0.1]*prf.c;};            %  length of blowing area: pressure side
-blo.x= {[0.5]*prf.c;              %  midpoint of blowing area
+blo.x= {[0.5]*prf.c;              %  start/mid point of blowing area
         [0.5]*prf.c;};             
-blo.A= {[0.005]*flo.Uinfty;       % blowing intensity  
+blo.A= {[0.005]*flo.Uinfty;       % blowing intensity of each region 
         [0.005]*flo.Uinfty};
 
-% advanced determination of blowing region if ArcLengthMode=true
+% Mode 3      
+% advanced determination of blowing region if blo.Mode==3
 %   -> blowing regions are not restricted on upper or lower part
 %   -> use intensity 0 to turn of blowing / suction for following region
-blo.ArcLengthMode=false;%true;%
+
 
 % commit values of arclength, where blowing intensity changes and the respective velocities
-
 % arclengths in percent of smax -> values have to be lower than 1
 %                               -> s_i+1 has to be bigger than s_i
 %                               -> no blowing until s_1

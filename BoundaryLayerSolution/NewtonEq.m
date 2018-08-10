@@ -176,13 +176,20 @@ if prf.sharpTE
    solnew.Cp(prf.N)=solnew.Cp(1); 
 end
 
-% % find seperation points
-% % suctionside
-% [solnew.xseparation(1), solnew.xreattach(1)]=FindSeparationLoc( prf.nodes.X(prf.Nle-1:-1:1),solnew.HK(prf.Nle-1:-1:1),...
-%                                                                                             prf.Nle-solnew.iTran(1), 3.8,2.5 );
-% %pressure side
-% [solnew.xseparation(2), solnew.xreattach(2)]=FindSeparationLoc( prf.nodes.X(prf.Nle:prf.N),solnew.HK(prf.Nle:prf.N),...
-%                                                                                            solnew.iTran(2)-prf.Nle+1, 3.8,2.5 );
+
+% calculate power input of uniform blowing
+if ~isempty(Blow) 
+    solnew.PowerInput=getPowerInput(solnew.Cp,solnew.Vb,flo.Uinfty,prf.s,2);
+end
+
+
+% find seperation points
+% suctionside
+[solnew.xseparation(1), solnew.xreattach(1)]=FindSeparationLoc( prf.nodes.X(prf.Nle-1:-1:1),solnew.HK(prf.Nle-1:-1:1),...
+                                                                prf.Nle-solnew.iTran(1), 3.8,2.5, solnew.tran.x(1) );
+%pressure side
+[solnew.xseparation(2), solnew.xreattach(2)]=FindSeparationLoc( prf.nodes.X(prf.Nle:prf.N),solnew.HK(prf.Nle:prf.N),...
+                                                                solnew.iTran(2)-prf.Nle+1, 3.8,2.5, solnew.tran.x(2) );
 
 
 % Write out

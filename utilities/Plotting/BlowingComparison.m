@@ -103,7 +103,7 @@ RL(1)=0;
 %---------------------------------------------------
 
 VbU=solB.Vb(1:prfB.Nle-1);
-VbL=solB.Vb(prfB.Nle-1:prfB.N);
+VbL=solB.Vb(prfB.Nle:prfB.N);
 indB1= find( abs(VbU)>1e-7 );
 indB2= find( abs(VbL)>1e-7 );
 
