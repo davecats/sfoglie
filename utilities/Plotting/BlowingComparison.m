@@ -111,7 +111,7 @@ indB2= find( abs(VbL)>1e-7 );
 legendstr={'without blowing','with blowing'};
 xstr='x';
 
-if strcmp(Quantity ,'Cf') || strcmp(Quantity ,'CF')|| strcmp(Quantity ,'tau')|| strcmp(Quantity ,'Tau')
+if strcmp(Quantity ,'Cf')|| strcmp(Quantity ,'cf') || strcmp(Quantity ,'CF')|| strcmp(Quantity ,'tau')|| strcmp(Quantity ,'Tau')
     titlestr='wall shear stress';
     ystr=' C_f= \tau_w / \rho U_\infty^2 ';
     yNo=sol.tau;

@@ -1,5 +1,5 @@
-init
-parameters
+init        % initialize: add paths etc.
+parameters  % load parameters for calculation
 % inviscid solution 
 [InvRef.prf,InvRef.flo,InvRef.CoeffMatrix,InvRef.Uinv,InvRef.sges ] = InviscidSolution(prf,flo,eng);
 
@@ -9,33 +9,27 @@ parameters
 
 %---------------------------------------------------------
 
-% set reference case
+% set reference case without uniform blowing
 CL_ref=sol.CL; CD_ref=sol.Cdrag; tr_ref=sol.tran.x;ratio_ref=CL_ref/CD_ref;
 
-% use tripping at transition location ofuncontrolled case (not necessary)
+% use tripping at transition location of uncontrolled case 
+%   ->neglect effect of blowing on transition, uncomment to consider transition changes
 solRef=sol;prfRef=prf;
 tri.active=[true;true];
 tri.x=solRef.tran.x;
 flo.nkrit=9;
 
-%p=[0,0.08016,0.01];
-p=[0.8292,0.1262,-0.01];
-xm=p(1)+p(2)/2;
-blo.active=true;                 
-blo.L= {[p(2)]*prf.c;              %  length of blowing area: suction side
-        [0.1]*prf.c;};            %  length of blowing area: pressure side
-blo.x= {xm*prf.c;          %  midpoint of blowing area
-        0.1*prf.c;};             
-blo.A= {[p(3)]*flo.Uinfty;
-        [0.0]*flo.Uinfty};
-    
+% turn on uniform blowing
+blo.active=true;                     
 [solB,prfB,flo,~,~,~,~]=airfoil(prf,flo,tri,blo,eng,InvRef);
 
+% compare
 BlowingComparison(prf,flo.wake,sol,prfB,solB,1,'delta');
 
-% %%
-% % % Plots
-% %--------------------------------------------------
+% %% Plotting Functions avaivable 
+%
+% % % plot quantities
+% %------------------------------------------------------------------
 % 
 % % quantities that can be plotted: 
 % %'tau','Cf','Cfint','Cp','delta' ,'U', 'CD','D','H12' ,'H32', 'Ret'
@@ -51,21 +45,46 @@ BlowingComparison(prf,flo.wake,sol,prfB,solB,1,'delta');
 % PlotStuff(prf,flo.wake,sol, 'tau');
 % 
 % 
-% % Plots of Profiles
+% % Overview-plots of profiles
+% %------------------------------------------------------------------
 % % mode 1: plots Profil and wake with displacement thickness and shows CL, Cd usw.
-% % mode 2: plots Profil and wake witch the nodepositions used
-% % mode 3: plots Profil with transition locations andblowing distribution in blowing case
+% % mode 2: plots Profil and wake with the node positions used
+% % mode 3: plots Profil with transition locations and blowing distribution in blowing case
+% %------------------------------------------------------------------
 % mode=1;
 % PlotProfile(prf,flo.wake,sol, mode);
+%
 % 
 % % Comparison between blowing case and reference case without blowing
+% %------------------------------------------------------------------
 % % section 0: only plots overview with reduction in CL and Cd
 % % section 1: plots overview + plots for suction side
 % % section 2: plots overview + plots for pressure side
-% % Quantities that can be plotted: 'Cf','Cp','delta','q','H12','H32','CD','D','ReT'  
+% % Quantities that can be plotted: 'Cf','Cp','delta','q','H12','H32','CD','D','Ret'  
+% %------------------------------------------------------------------
 % section=1;Quantity='Cf'; 
 % BlowingComparison(prf,flo.wake,sol,prfB,solB,section,Quantity);
 % 
+% % Plot line forces 
+% %------------------------------------------------------------------
+% % mode=0: sum of lower and upper airfoil part
+% % mode=1: upper airfoil part
+% % mode=2: lower airfoil part
+% % if sol2 comitted -> plot both solutions
+% %------------------------------------------------------------------
+% PlotForces(prf,flo,sol,mode, solRef)
+%
+% % Plot stress/force vectors
+% %------------------------------------------------------------------
+% % each_nth: only plot each n-th node (default 1 -> every node)
+% % total   =true: plot the total stresses consisting of pressure and shear stresses 
+% % pressure=true: plot the pressure stresses
+% % shear   =true: plot the shear stresses
+% % force = true : plots force instead of stress vectors (integrated over area)
+% %------------------------------------------------------------------
+% each_nth=3,total=true; pressure=false; shear=false; force=false;
+% PlotStressVectors( prf,sol,flo,each_nth,total, pressure, shear, force )
+
 
 
 return
@@ -73,7 +92,7 @@ return
 %---------------------------------------------------------
 % loop over alfas + write out  for polar curves
 step=1;
-for k=0:step:16
+for k=-4:step:16
 
     flo.alfa= k *pi/180;
 
@@ -91,22 +110,23 @@ for k=0:step:16
         CL   =sol.CL ;
         Cnu  =sol.Cnu;
         Cdrag=sol.Cdrag;
+        Cd_p=sol.Cdrag-sol.Cnu;
         alph=aTMP;
         
-        xTT= [sol.tran.x(1), sol.xseparation(1), sol.xreattach(1) ];
-        
-        TST= DragCoeff(sol.T(end),sol.HK(end),sol.U(end),1);
+        xTT_up= [sol.tran.x(1), sol.xseparation(1), sol.xreattach(1) ];
+        xTT_lo= [sol.tran.x(2), sol.xseparation(2), sol.xreattach(2) ];
     else
         CP=[CP,sol.Cp(1:prf.N)];
         TAU=[TAU,sol.tau(1:prf.N)];
         CL=[CL;sol.CL];
         Cnu=[Cnu;sol.Cnu];
         Cdrag=[Cdrag;sol.Cdrag];
+        Cd_p=[Cd_p;sol.Cdrag-sol.Cnu];
         alph=[alph;aTMP];
         
-        xTT=[xTT;sol.tran.x(1), sol.xseparation(1), sol.xreattach(1) ];
-        
-        TST=[TST; DragCoeff(sol.T(end),sol.HK(end),sol.U(end),1)];
+        xTT_up=[xTT_up;sol.tran.x(1), sol.xseparation(1), sol.xreattach(1) ];
+        xTT_lo=[xTT_lo;sol.tran.x(2), sol.xseparation(2), sol.xreattach(2) ];
+
     end
 
 end

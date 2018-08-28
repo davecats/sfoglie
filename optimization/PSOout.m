@@ -1,7 +1,7 @@
 function stop = PSOout( optimValues,state )
 %PSOOUT outputfunction for particle swarm optimization 
 
-maxIter=38; % maximum number of iterations
+maxIter=15; % maximum number of iterations
 stop=false;
 if optimValues.iteration>maxIter
    stop=true; 

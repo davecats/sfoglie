@@ -17,9 +17,10 @@ dCL= (CLnew-sol.CL);
 dCLmin= max(-0.5, -0.9*sol.CL);
 
 Rel=1;
+if abs(sol.CL)>1e-3
 if dCL > 0.5;  Rel= 0.5/dCL; end
 if dCL < dCLmin; Rel=dCLmin/dCL; end
-
+end
 
 dU= Un  -sol.U;
 

@@ -4,8 +4,11 @@ function [CM,MR,Mp ] = getCM(prf,sol,flo,refPoint,simpson)
 %       simpson=true -> numerical integration with simpson law
 %       simpson=false-> numerical integration with mitpoint rule
 
- 
-if nargin==4 || simpson
+if nargin<4 % ref point not committed
+   refPoint=[0.25,0]*prf.c;
+   disp('Momentum coefficient reference point unspecified -> set to x=0.25c y=0')
+end
+if nargin<5 || simpson
     mode=1;
 else
     mode=2;

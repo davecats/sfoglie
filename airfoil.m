@@ -23,7 +23,9 @@ if Nochange
     try
         % assign values
         prf=InvRef.prf;
+        tmp=flo.nkrit;
         flo=InvRef.flo;
+        flo.nkrit=tmp;
         CoeffMatrix=InvRef.CoeffMatrix;
         Uinv=InvRef.Uinv;
         sges=InvRef.sges;
@@ -46,6 +48,14 @@ if ~Nochange
 end
 
 
+% if only inviscid solution is required
+if flo.invisc
+    sol.invisc=true;
+    sol.U=Uinv;
+    sol.Cp= 1-(Uinv/flo.Uinfty).^2;
+    sol.CL= getCL(prf,Uinv,flo.alfa,flo.Uinfty);
+    return
+end
 
 
 %----------------------------------------------------------------------------
@@ -61,20 +71,12 @@ sol = GetInitialSolution( prf,flo, tri, eng, Uinv, blo.Vb, 2);
 %  coupled boundary layer and potential flow solution
 [sol, prf]=NewtonEq( prf,flo,eng,sol,CoeffMatrix.D,Uinv,blo.pressureCor);
 
+end
+
+%PlotProfile(prf,flo.wake,sol, 3);
 
 
 
-% If no convergence -> try with different approach for Transition panel EQ
-% if sol.residual>eng.tol
-%     eng.tranEQ=3;
-%     disp('Not converged, Try different Transition approach ')
-%     disp('------------------------------------------------ ')
-%     [soln, prfn]=NewtonEq( prf,flo,eng,sol,CoeffMatrix.D,Uinv );
-%     if soln.residual<sol.residual
-%        sol=soln; prf=prfn; 
-%     end
-%     clear soln prfn
-% end
 
 
 

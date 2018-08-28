@@ -1,5 +1,5 @@
 function blo=addBlowing(blo,prf)
-%ADDBLOWING determines the blowing velocity for each nodes
+%ADDBLOWING determines the blowing velocity for each node
 
 
 blo.Vb=zeros(prf.N,1);
