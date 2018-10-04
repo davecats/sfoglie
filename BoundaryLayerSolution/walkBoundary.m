@@ -310,6 +310,7 @@ for i=Start:step:Ende
             % write transition node values
             sol.iTran(section)=i+step;
             sol.tran.s(section)=prf.s(i+step);
+            sol.tran.x(section)=prf.nodes.X(i+step);
             sol.tran.n2(section)=sol.c(i+step);
             sol.tran.Llam(section)=Lges(i-shift);
             sol.tran.Lturb(section)=0;

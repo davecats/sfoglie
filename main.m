@@ -91,27 +91,26 @@ return
 %% Calculation of polar curves
 %---------------------------------------------------------
 % loop over alfas + write out  for polar curves
-step=1;
-for k=-4:step:16
+step=1;start=0;
+for k=start:step:12
 
     flo.alfa= k *pi/180;
 
-    aTMP=round(flo.alfa*180/pi,1);
-    disp(['ALFA=',num2str(aTMP)])
+    disp(['ALFA=',num2str(k)])
     disp('--------------------------------------------')
     
     
     % evaluation
     [sol,prf,flo,~,~,~]=airfoil(prf,flo,tri,blo,eng);
 
-    if k==0
+    if k==start
         CP=sol.Cp(1:prf.N);
         TAU=sol.tau(1:prf.N);
         CL   =sol.CL ;
         Cnu  =sol.Cnu;
         Cdrag=sol.Cdrag;
         Cd_p=sol.Cdrag-sol.Cnu;
-        alph=aTMP;
+        alph=k;
         
         xTT_up= [sol.tran.x(1), sol.xseparation(1), sol.xreattach(1) ];
         xTT_lo= [sol.tran.x(2), sol.xseparation(2), sol.xreattach(2) ];
@@ -122,7 +121,7 @@ for k=-4:step:16
         Cnu=[Cnu;sol.Cnu];
         Cdrag=[Cdrag;sol.Cdrag];
         Cd_p=[Cd_p;sol.Cdrag-sol.Cnu];
-        alph=[alph;aTMP];
+        alph=[alph;k];
         
         xTT_up=[xTT_up;sol.tran.x(1), sol.xseparation(1), sol.xreattach(1) ];
         xTT_lo=[xTT_lo;sol.tran.x(2), sol.xseparation(2), sol.xreattach(2) ];
@@ -134,8 +133,8 @@ end
 %% Even distributed paremeters for blowing location  
 %
 % N=20;
-% xTop=linspace(-0.05,1.05,N);
-% xBot=linspace(-0.05,1.05,N);
+% xTop=linspace(-0.1,1,N);
+% xBot=linspace(-0.1,1,N);
 % 
 % tri.x=tr_ref;
 % tri.active=[true; true];
@@ -152,8 +151,8 @@ end
 % end
 % 
 % contourf(xTop,xBot,(real(CL(:,:))./CD)'/(CL_ref/CD_ref))
-% xlabel('x_M^{TOP}')
-% ylabel('x_M^{BOTTOM}')
+% xlabel('x^{TOP}')
+% ylabel('x^{BOTTOM}')
 
 
 

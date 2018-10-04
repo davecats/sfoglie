@@ -266,6 +266,7 @@ for section=1:3
                 sol.Tripping(section)=true;
                 sol.sT(section)=sBL(i+step);
                 sol.xT(section)=prf.nodes.X(i+step);
+                sol.tran.x(section)=prf.nodes.X(i+step);
                 
                 % set initial value for sqrt(Ctau) at TE
                 C= InitialCtau( sol.D(ind),sol.T(ind),sol.U(ind),nu );
@@ -274,6 +275,7 @@ for section=1:3
                 % write transition node values
                 sol.iTran(section)=i+step;
                 sol.tran.s(section)=prf.s(i+step);
+                sol.tran.x(section)=prf.nodes.X(i+step);
                 sol.tran.n2(section)=sol.c(i+step);
                 sol.tran.Llam(section)=Lges(i-shift);
                 sol.tran.Lturb(section)=0;
