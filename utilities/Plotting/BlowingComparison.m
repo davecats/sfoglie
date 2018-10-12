@@ -13,7 +13,8 @@ function [Tab ] = BlowingComparison(prf,wake,sol,prfB,solB,section,Quantity)
 %                       'CD'    - dissipation coefficient
 %                       'D'     - dissipation integral
 %                       'ReT'   - Reynoldsnumber based on momentum thickness
-
+%                       'n'     - amplification exponent
+%                       'ctau'  - shear stress coefficient
 
 
 if nargin==5; section=0; end
@@ -110,6 +111,15 @@ indB2= find( abs(VbL)>1e-7 );
 
 legendstr={'without blowing','with blowing'};
 xstr='x';
+if section==1
+    ind=1:prf.Nle-1;
+elseif section==2
+    ind=prf.Nle:prf.N;
+end
+isN=false;
+isC=false;
+xlms=[0,max(prf.nodes.X)];
+
 
 if strcmp(Quantity ,'Cf')|| strcmp(Quantity ,'cf') || strcmp(Quantity ,'CF')|| strcmp(Quantity ,'tau')|| strcmp(Quantity ,'Tau')
     titlestr='wall shear stress';
@@ -160,13 +170,65 @@ elseif strcmp(Quantity ,'Ret') || strcmp(Quantity ,'ReT')
     ystr=' Re_t';
     yNo=sol.Ret;
     yBlow=solB.Ret;    
+elseif strcmp(Quantity ,'n') ||strcmp(Quantity ,'N')
+    numUP1 = prf.Nle-sol.iTran(1)-1;
+    numLO1 = sol.iTran(2)-prf.Nle ;
+    numUP2 = prfB.Nle-solB.iTran(1)-1;
+    numLO2 = solB.iTran(2)-prfB.Nle ;
+    if section==1
+        ind1=ind(end:-1:length(ind)-numUP1);
+        ind2=ind(end:-1:length(ind)-numUP2);
+    elseif section==2
+        ind1=ind(1:numLO1);
+        ind2=ind(2:numLO2);
+    end
+    titlestr='amplification exponent';
+    ystr=' n ' ;
+    n=sol.c;
+    n(sol.iTran(1))=sol.tran.n2(1);
+    n(sol.iTran(2))=sol.tran.n2(2);
+    n(1:sol.iTran(1)-1)=0;
+    n(sol.iTran(2):end)=0;
+    
+    nB=solB.c;
+    nB(solB.iTran(1))=solB.tran.n2(1);
+    nB(solB.iTran(2))=solB.tran.n2(2);
+    nB(1:solB.iTran(1)-1)=0;
+    nB(solB.iTran(2):end)=0;   
+    
+    yNo= n; 
+    yBlow=nB;
+    
+    isN=true;
+    xlms=[0,max([prf.nodes.X(ind1),prf.nodes.X(ind2)])];
+elseif strcmp(Quantity ,'c') ||strcmp(Quantity ,'C')||strcmp(Quantity ,'Ctau')||strcmp(Quantity ,'ctau')
+    numUP1 = sol.iTran(1);
+    numLO1 = prf.N-sol.iTran(2)+1 ;
+    numUP2 = solB.iTran(1);
+    numLO2 = prfB.N-solB.iTran(2)+1 ;
+    if section==1
+        ind1=ind(1:numUP1);
+        ind2=ind(1:numUP2);
+    elseif section==2
+        ind1=ind(end-numLO1:end);
+        ind2=ind(end-numLO2:end);
+    end
+    
+    
+    titlestr='shear stress coefficient';
+    ystr='C_\tau' ;
+    c=sol.c;
+    c(sol.iTran(1)+1:sol.iTran(2)-1)=0;
+    cB=sol.c;
+    cB(solB.iTran(1)+1:solB.iTran(2)-1)=0;
+    yNo= c; 
+    yBlow=cB;  
+    
+    isC=true;
+    xlms=[min([prf.nodes.X(ind1) prf.nodes.X(ind2)]),max(prf.nodes.X)];
 end
 
-if section==1
-    ind=1:prf.Nle-1;
-elseif section==2
-    ind=prf.Nle:prf.N;
-end
+
 
 
 %upper limit
@@ -183,8 +245,17 @@ hold on
 title(titlestr) 
 xlabel(xstr)
 ylabel(ystr)
+if isN
+   plot(prf.nodes.X(ind1),yNo(ind1),'r')
+   plot(prf.nodes.X(ind2),yBlow(ind2),'r --')   
+elseif isC
+   plot(prf.nodes.X(ind1),yNo(ind1),'r')
+   plot(prf.nodes.X(ind2),yBlow(ind2),'r --')    
+else
 plot(prf.nodes.X(ind),yNo(ind), 'b')
 plot(prf.nodes.X(ind),yBlow(ind), 'b --')
+end
+
 if strcmp(Quantity ,'delta')
     plot(prf.nodes.X(ind),y2No(ind),'r')
     plot(prf.nodes.X(ind),y2Blow(ind),'r --')  
@@ -199,12 +270,12 @@ if ~isempty(indB1) && section==1
     line([prf.xU(indB1(end)) prf.xU(indB1(end))], [lowl  upl],'color','black','LineStyle','--');
 end
 if ~isempty(indB2) && section==2
-    line([prf.xL(indB2(1))   prf.xL(indB2(1))]  , [lowl  upl],'color','black','LineStyle','--');
+    line([prf.xL(indB2(2))   prf.xL(indB2(2))]  , [lowl  upl],'color','black','LineStyle','--');
     line([prf.xL(indB2(end)) prf.xL(indB2(end))], [lowl  upl],'color','black','LineStyle','--');
 end
 %legendstr={legendstr,'blowing region'};
 legend(legendstr,'location','best'); 
-xlim([0,max(prf.nodes.X)])
+xlim(xlms)
 
 
 if strcmp(Quantity ,'Cp') || strcmp(Quantity ,'CP')

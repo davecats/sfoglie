@@ -19,6 +19,8 @@ function [  ] = PlotStuff( prf,wake,sol ,Quantity , section, OverArclength )
 %                'H32'   - shapeparameter H32
 %                'Ret'   - Reynoldsnumber based on U and momentumthickness
 %                'q'     - sourceterms
+%                'n'     - amplification exponent
+%                'ctau'  - shear stress coefficient
 
 %   total arclength vector
 if nargin<6
@@ -145,6 +147,34 @@ elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q')
     titlestr='source contribution';
     ystr=' q ' ;
     y_arr= sol.m; 
+elseif strcmp(Quantity ,'n') ||strcmp(Quantity ,'N')
+    numUP = prf.M-sol.iTran(1)-1;
+    numLO = sol.iTran(2)-prf.M;
+    if section==1
+        ind=ind(1:numUP);
+    elseif section==2
+        ind=ind(2:numLO);
+    elseif section==3
+        disp('no amplification in wake')
+        return
+    elseif section==4 || section==5
+        ind1=ind1(1:numUP);
+        ind2=ind2(2:numLO);
+    end
+    titlestr='amplification exponent';
+    ystr=' n ' ;
+    n=sol.c;
+    n(sol.iTran(1))=sol.tran.n2(1);
+    n(sol.iTran(2))=sol.tran.n2(2);
+    n(1:sol.iTran(1)-1)=0;
+    n(sol.iTran(2):end)=0;
+    y_arr= n; 
+elseif strcmp(Quantity ,'c') ||strcmp(Quantity ,'C')||strcmp(Quantity ,'Ctau')||strcmp(Quantity ,'ctau')
+    titlestr='shear stress coefficient';
+    ystr='C_\tau' ;
+    c=sol.c;
+    c(sol.iTran(1)+1:sol.iTran(2)-1)=0;
+    y_arr= c; 
 end
     
     
