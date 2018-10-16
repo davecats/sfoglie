@@ -19,6 +19,7 @@ function [  ] = PlotStuff( prf,wake,sol ,Quantity , section, OverArclength )
 %                'H32'   - shapeparameter H32
 %                'Ret'   - Reynoldsnumber based on U and momentumthickness
 %                'q'     - sourceterms
+%                'm'     - mass defect   
 %                'n'     - amplification exponent
 %                'ctau'  - shear stress coefficient
 
@@ -146,9 +147,17 @@ elseif strcmp(Quantity ,'Ret') || strcmp(Quantity ,'ReT')
 elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q')    
     titlestr='source contribution';
     ystr=' q ' ;
+    q=[FiniteDifferences(sol.m(prf.Nle-1:-1:1),prf.sU(end:-1:1)) ;...
+       FiniteDifferences(sol.m(prf.Nle:prf.N),prf.sL)];
+    y_arr= q; 
+elseif strcmp(Quantity ,'m') || strcmp(Quantity ,'M')    
+    titlestr='mass defect';
+    ystr=' m ' ;
     y_arr= sol.m; 
 elseif strcmp(Quantity ,'n') ||strcmp(Quantity ,'N')
-    numUP = prf.M-sol.iTran(1)-1;
+    titlestr='amplification exponent';
+    ystr=' n ' ;
+    numUP = prf.M-sol.iTran(1)+1;
     numLO = sol.iTran(2)-prf.M;
     if section==1
         ind=ind(1:numUP);
@@ -161,14 +170,15 @@ elseif strcmp(Quantity ,'n') ||strcmp(Quantity ,'N')
         ind1=ind1(1:numUP);
         ind2=ind2(2:numLO);
     end
-    titlestr='amplification exponent';
-    ystr=' n ' ;
     n=sol.c;
     n(sol.iTran(1))=sol.tran.n2(1);
     n(sol.iTran(2))=sol.tran.n2(2);
     n(1:sol.iTran(1)-1)=0;
     n(sol.iTran(2):end)=0;
     y_arr= n; 
+    
+    nkrit= (sol.tran.n2(1)-n(sol.iTran(1)+1))*sol.tran.Llam(1)...
+        /(sol.tran.Llam(1) + sol.tran.Lturb(1))+n(sol.iTran(1)+1);  
 elseif strcmp(Quantity ,'c') ||strcmp(Quantity ,'C')||strcmp(Quantity ,'Ctau')||strcmp(Quantity ,'ctau')
     titlestr='shear stress coefficient';
     ystr='C_\tau' ;
@@ -177,6 +187,8 @@ elseif strcmp(Quantity ,'c') ||strcmp(Quantity ,'C')||strcmp(Quantity ,'Ctau')||
     y_arr= c; 
 end
     
+
+% Do the plots
     
 if ~plotted
    figure 
@@ -196,13 +208,23 @@ if ~plotted
 end
 
 
-% limits
+% set limits
 if ~(strcmp(Quantity ,'Cfint') || strcmp(Quantity ,'cfint'))
     if section<4
-        xlim([min(x(ind)),max(x(ind))])
+        xmin=min(x(ind));
+        xmax=max(x(ind));
+        
     else
-        xlim([min(x(ind1)),max(x(ind2))])
+        xmin=min(x(ind1));
+        xmax=max(x(ind2));
     end
+    xlim([xmin,xmax])
+end
+
+
+if strcmp(Quantity ,'n') ||strcmp(Quantity ,'N')
+   line([xmin  xmax]  , [nkrit  nkrit],'color','black');%,'LineStyle','--'); 
+   text(0.5*(xmin+xmax), nkrit*0.96, 'n_k_r_i_t');
 end
 
 %-------------------------------------------------------------------------------------------------------------------------

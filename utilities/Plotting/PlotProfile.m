@@ -97,22 +97,30 @@ elseif mode==3 || mode==4
     hold on; box on;
     l1=line([xUtr(1) endU(1)]  , [xUtr(2) endU(2)],'color','r','Linewidth',0.7);
     line([xLtr(1) endL(1)]  , [xLtr(2) endL(2)],'color','r','Linewidth',0.7);
-
+    
+    pos1= xUtr - 1.5*lls*prf.panels.n(:,sol.iTran(1));
+    pos2= xLtr - 1.5*lls*prf.panels.n(:,sol.iTran(2)-1);
+    
+    strT='tran';cc=0.04;
+    if mode==4; cc=0.08; strT=[strT,' ref']; end;
+    text(pos1(1)-cc*prf.c,pos1(2),strT,'Color','red')
+    text(pos2(1)-cc*prf.c,pos2(2),strT,'Color','red')
+    
     ind=find(abs(sol.Vb(1:prf.N) )>1e-7); 
     if ~isempty(ind)
         add=' and blowing profiles';
         Faktor= 0.02*prf.c/max(abs(sol.Vb(1:prf.N)));
         vb= [prf.nodes.X;prf.nodes.Y] - Faktor*([1;1]*sol.Vb(1:prf.N)' ).*prf.nodes.n;
         l2=plot(vb(1,:),vb(2,:),'b');
-        legendE1='TP';
-        if mode==4; legendE1=[legendE1,' blowing case']; end
-        legend([l1 l2],{legendE1,'blowing velocity'},'location','northwest')
+        if mode==3;legend([l1 l2],{'transition point','blowing velocity'},'location','northwest');end
+        %if mode==4; legendE1='transition point blowing case'; end
+        %legend([l1 l2],{legendE1,'blowing velocity'},'location','northwest')
         vTT=vb(:,ind);
         for i=1:length(vTT(1,:))
             line([prf.nodes.X(ind(i)) vTT(1,i)]  , [prf.nodes.Y(ind(i)) vTT(2,i)],'color','b');
         end
     else
-        legend(l1,{'transition point'},'location','northwest')
+        %legend(l1,{'transition point'},'location','northwest')
         add='';
     end  
     plot([prf.panels.X],[prf.panels.Y],'k','Linewidth',1)

@@ -1,13 +1,15 @@
-function [Tab ] = BlowingComparison(prf,wake,sol,prfB,solB,section,Quantity)
+function [Tab ] = BlowingComparison(prf,wake,sol,prfB,solB,section,Quantity,OverArclength )
 %BLOWINGCOMPARISON gives Plots of Comparison between blowing case and case without blowing
 %                  section=0: only gives overview plot (default)
 %                  section=1: gives comparison plots for suction side 
 %                  section=2: gives comparison plots for pressure side 
+%                  OverArclength: if true plots over arclength instead of x
 %                  Quantity: quantity to be plotted  
 %                       'tau'   - All friction related quantities (Cfint,tau, r)  (default)
 %                       'Cp'    - Pressure coefficient
 %                       'delta' - Boundary layer thickness
 %                       'q'     - source terms
+%                       'm'     - mass defect  
 %                       'H12'   - shape parameter
 %                       'H32'   - shape parameter
 %                       'CD'    - dissipation coefficient
@@ -19,7 +21,7 @@ function [Tab ] = BlowingComparison(prf,wake,sol,prfB,solB,section,Quantity)
 
 if nargin==5; section=0; end
 if nargin==6; Quantity='Cf'; end
-
+if nargin<8; OverArclength=false; end
 
 % reduction in global values
 
@@ -47,6 +49,12 @@ endL= xLtr - lls*prf.panels.n(:,sol.iTran(2)-1);
 fig1=PlotProfile( prfB,wake,solB, 4) ;
 line([xUtr(1) endU(1)]  , [xUtr(2) endU(2)],'color','k','Linewidth',0.7);
 line([xLtr(1) endL(1)]  , [xLtr(2) endL(2)],'color','k','Linewidth',0.7);
+
+    pos1= xUtr - 2*lls*prf.panels.n(:,sol.iTran(1));
+    pos2= xLtr - 2*lls*prf.panels.n(:,sol.iTran(2)-1);
+    
+    text(pos1(1)-0.08*prf.c,pos1(2),'tran con')
+    text(pos2(1)-0.08*prf.c,pos2(2),'tran con')
 
 text(0.4*prf.c, 0.28*prf.c, str);
 
@@ -103,24 +111,32 @@ RL(1)=0;
 % comparison plots with blowing and without blowing
 %---------------------------------------------------
 
-VbU=solB.Vb(1:prfB.Nle-1);
-VbL=solB.Vb(prfB.Nle:prfB.N);
+VbU=solB.Vb;VbU(prfB.Nle:end)=0;
+VbL=solB.Vb;VbL(1:prfB.Nle-1)=0;
 indB1= find( abs(VbU)>1e-7 );
 indB2= find( abs(VbL)>1e-7 );
 
+if OverArclength
+  xx= [prf.sU,prf.sL]; xstr='s';
+else
+  xx=prf.nodes.X;  xstr='x';
+end
+
 
 legendstr={'without blowing','with blowing'};
-xstr='x';
 if section==1
     ind=1:prf.Nle-1;
 elseif section==2
     ind=prf.Nle:prf.N;
 end
+%set limits
+xlms=[0,max(xx(ind))];
+
+% check if n or Ctau is plotted
 isN=false;
 isC=false;
-xlms=[0,max(prf.nodes.X)];
 
-
+% determine title, y-axis label and y quantity
 if strcmp(Quantity ,'Cf')|| strcmp(Quantity ,'cf') || strcmp(Quantity ,'CF')|| strcmp(Quantity ,'tau')|| strcmp(Quantity ,'Tau')
     titlestr='wall shear stress';
     ystr=' C_f= \tau_w / \rho U_\infty^2 ';
@@ -163,6 +179,15 @@ elseif strcmp(Quantity ,'delta')
 elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q')
     titlestr='source contribution';
     ystr=' q ';
+    q=[FiniteDifferences(sol.m(prf.Nle-1:-1:1),prf.sU(end:-1:1)) ;...
+       FiniteDifferences(sol.m(prf.Nle:prf.N),prf.sL)];
+    yNo=q;
+    q2=[FiniteDifferences(solB.m(prfB.Nle-1:-1:1),prfB.sU(end:-1:1)) ;...
+       FiniteDifferences(solB.m(prfB.Nle:prf.N),prfB.sL)];
+    yBlow=q2;  
+elseif strcmp(Quantity ,'m') || strcmp(Quantity ,'M')
+    titlestr='mass defect';
+    ystr=' m ';
     yNo=sol.m;
     yBlow=solB.m;  
 elseif strcmp(Quantity ,'Ret') || strcmp(Quantity ,'ReT')
@@ -172,14 +197,14 @@ elseif strcmp(Quantity ,'Ret') || strcmp(Quantity ,'ReT')
     yBlow=solB.Ret;    
 elseif strcmp(Quantity ,'n') ||strcmp(Quantity ,'N')
     numUP1 = prf.Nle-sol.iTran(1)-1;
-    numLO1 = sol.iTran(2)-prf.Nle ;
+    numLO1 = sol.iTran(2)-prf.Nle;
     numUP2 = prfB.Nle-solB.iTran(1)-1;
-    numLO2 = solB.iTran(2)-prfB.Nle ;
+    numLO2 = solB.iTran(2)-prfB.Nle;
     if section==1
         ind1=ind(end:-1:length(ind)-numUP1);
         ind2=ind(end:-1:length(ind)-numUP2);
     elseif section==2
-        ind1=ind(1:numLO1);
+        ind1=ind(2:numLO1);
         ind2=ind(2:numLO2);
     end
     titlestr='amplification exponent';
@@ -199,8 +224,11 @@ elseif strcmp(Quantity ,'n') ||strcmp(Quantity ,'N')
     yNo= n; 
     yBlow=nB;
     
+    nkrit= (sol.tran.n2(1)-n(sol.iTran(1)+1))*sol.tran.Llam(1)...
+        /(sol.tran.Llam(1) + sol.tran.Lturb(1))+n(sol.iTran(1)+1);  
+    
     isN=true;
-    xlms=[0,max([prf.nodes.X(ind1),prf.nodes.X(ind2)])];
+    xlms=[0,max([xx(ind1),xx(ind2)])];
 elseif strcmp(Quantity ,'c') ||strcmp(Quantity ,'C')||strcmp(Quantity ,'Ctau')||strcmp(Quantity ,'ctau')
     numUP1 = sol.iTran(1);
     numLO1 = prf.N-sol.iTran(2)+1 ;
@@ -225,7 +253,7 @@ elseif strcmp(Quantity ,'c') ||strcmp(Quantity ,'C')||strcmp(Quantity ,'Ctau')||
     yBlow=cB;  
     
     isC=true;
-    xlms=[min([prf.nodes.X(ind1) prf.nodes.X(ind2)]),max(prf.nodes.X)];
+    xlms=[min([xx(ind1) xx(ind2)]),max(prf.nodes.X)];
 end
 
 
@@ -246,19 +274,21 @@ title(titlestr)
 xlabel(xstr)
 ylabel(ystr)
 if isN
-   plot(prf.nodes.X(ind1),yNo(ind1),'r')
-   plot(prf.nodes.X(ind2),yBlow(ind2),'r --')   
+   plot(xx(ind1),yNo(ind1),'r')
+   plot(xx(ind2),yBlow(ind2),'r --')   
+    line(xlms  , [nkrit  nkrit],'color','black');%,'LineStyle','--'); 
+   text(0.5*sum(xlms), nkrit*0.96, 'n_k_r_i_t');
 elseif isC
-   plot(prf.nodes.X(ind1),yNo(ind1),'r')
-   plot(prf.nodes.X(ind2),yBlow(ind2),'r --')    
+   plot(xx(ind1),yNo(ind1),'r')
+   plot(xx(ind2),yBlow(ind2),'r --')    
 else
-plot(prf.nodes.X(ind),yNo(ind), 'b')
-plot(prf.nodes.X(ind),yBlow(ind), 'b --')
+plot(xx(ind),yNo(ind), 'b')
+plot(xx(ind),yBlow(ind), 'b --')
 end
 
 if strcmp(Quantity ,'delta')
-    plot(prf.nodes.X(ind),y2No(ind),'r')
-    plot(prf.nodes.X(ind),y2Blow(ind),'r --')  
+    plot(xx(ind),y2No(ind),'r')
+    plot(xx(ind),y2Blow(ind),'r --')  
 elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q')
     delta_q=solB.m-sol.m;
     legendstr={'q without blowing','q with blowing','$q_b-q$'};
@@ -266,12 +296,12 @@ elseif strcmp(Quantity ,'q') || strcmp(Quantity ,'Q')
 end
 % blowing region
 if ~isempty(indB1) && section==1
-    line([prf.xU(indB1(1))   prf.xU(indB1(1))]  , [lowl  upl],'color','black','LineStyle','--');
-    line([prf.xU(indB1(end)) prf.xU(indB1(end))], [lowl  upl],'color','black','LineStyle','--');
+    line([xx(indB1(1))   xx(indB1(1))]  , [lowl  upl],'color','black','LineStyle','--');
+    line([xx(indB1(end)) xx(indB1(end))], [lowl  upl],'color','black','LineStyle','--');
 end
 if ~isempty(indB2) && section==2
-    line([prf.xL(indB2(2))   prf.xL(indB2(2))]  , [lowl  upl],'color','black','LineStyle','--');
-    line([prf.xL(indB2(end)) prf.xL(indB2(end))], [lowl  upl],'color','black','LineStyle','--');
+    line([xx(indB2(2))   xx(indB2(2))]  , [lowl  upl],'color','black','LineStyle','--');
+    line([xx(indB2(end)) xx(indB2(end))], [lowl  upl],'color','black','LineStyle','--');
 end
 %legendstr={legendstr,'blowing region'};
 legend(legendstr,'location','best'); 

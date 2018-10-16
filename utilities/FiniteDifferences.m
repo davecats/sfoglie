@@ -11,13 +11,14 @@ if nargin==2
     verf='central';
 end
 
-if length(V(:,1))==1 && length(x(:,1))==1
-    V=transpose(V);x=transpose(x);
-elseif length(V(:,1))==1
-    V=transpose(V);
-elseif length(x(:,1))==1
-    x=transpose(x);
-elseif length(V)~=length(x)
+% make sure the dimensions fit
+if size(x,1)<2;
+   x=x'; 
+end
+if size(V,1)<2;
+   V=V'; 
+end
+if length(V)~=length(x)
     disp('FiniteDifferences: dimensions of vectors do not fit')
     return
 end
