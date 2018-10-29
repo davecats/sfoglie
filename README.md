@@ -9,4 +9,6 @@ by M. Drela, originally written in F77. *sfoglie* ports most (yet not all) of th
 notably the possibility to add a wall-normal velocity distribution along the profile chord, which simulates flow control
 by blowing or suction. One missing features compared to XFOIL is the solution of the aerodynamic inverse problem.
 
+## Usage
 
+The file documentation.pdf contains a description of the program and usage instruction. If you are in a hurry and want to start quickly, just run *main.m* in MATLAB and see the output!  
