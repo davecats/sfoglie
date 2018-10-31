@@ -13,8 +13,8 @@
 % ------------------------------------------------------------------------------
 % If you use this code and find it helpful please cite
 % 
-% M.Reder, A. Stroh and D. Gatti, "The effect of uniform blowing on the performance 
-% of airfoils: a boundary element method study", Notes on Numerical Fluid 
+% M.Reder, A. Stroh and D. Gatti, "Preliminary study of flow control via uniform 
+% blowing on airfoils with a boundary element method", Notes on Numerical Fluid 
 % Mechanics and Multidisciplinary Design, (submitted, 2018)
 % ------------------------------------------------------------------------------
 % 
