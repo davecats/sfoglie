@@ -1,4 +1,4 @@
-function [fig] = PlotProfile( prf,wake,sol, mode) 
+function [fig] = PlotProfile( prf,wake,sol, flo,mode) 
 %PLOTPROFIL  mode=1: Plots the profile and wake with thicked shape due to displacement
 %            mode=2: Plots the profile and wake with node positions
 %            mode=3: Plots Profile with Transitionpoints and blowing distribution   
@@ -11,7 +11,7 @@ end
 % plot "thicked" shape
 %---------------------------------------------------
 if mode==1
-    Re=evalin('base','Re');
+    Re=flo.Re;
     
     
     XT=prf.nodes.X - prf.nodes.n(1,:).*transpose(sol.D(1:prf.N));
@@ -36,7 +36,7 @@ if mode==1
     xtt= [XUw(end:-1:1),XT,XLw];
     ytt= [YTw(end:-1:1),YT,YTw2];
 
-    tmp=round(prf.alfa*180/pi);
+    tmp=round(flo.alfa*180/pi);
     str={['\alpha=',num2str(tmp),' degree'],['Re=',num2str(Re)],['C_L=',num2str(sol.CL)],['C_d=',num2str(sol.Cdrag)],['C_\nu=',num2str(sol.Cnu)],['C_L/C_d=',num2str(sol.CL/sol.Cdrag)] };
 
     fig=figure; 

@@ -4,28 +4,30 @@
 
 %  profile and panels
 %  ------------------
-prf.naca = [4 4 1 2];         %  NACA 4-digit profile 
-prf.noSkew  = true;           %  if true neglects profile skewness
-prf.sharpTE = false;          %  if true modifies NACA prf for sharp trailing edge
-prf.c = 1;                    %  prf chord length 
-prf.M = 140;                  %  number of nodes on each surface (total number of nodes is 2M-1)
-prf.pmode = 1;                %  panelization mode: 1 (more nodes in middle) 2 (more nodes at LE and TE)
+prf.provideGeometry = true;         %  provide geometry or use NACA 4-digit
+prf.geometryFilename = 'AF_WT.dat'; % geometry file
+prf.naca = [4 4 1 2];               %  NACA 4-digit profile 
+prf.noSkew  = true;                 %  if true neglects profile skewness
+prf.sharpTE = false;                %  if true modifies NACA prf for sharp trailing edge
+prf.c = 1;                          %  prf chord length 
+prf.M = 80*2;                       %  number of nodes on each surface (total number of nodes is 2M-1)
+prf.pmode = 2;                      %  panelization mode: 1 (more nodes in middle) 2 (more nodes at LE and TE)
 
 %  Flow
 %  ----
-flo.alfa = 2*pi/180;         %  Angle of attack 
+flo.alfa = 0*pi/180;         %  Angle of attack 
 flo.invisc = false;          %  only inviscid solution 
 flo.Uinfty=1;                %  velocity of outer flow
-flo.Re= 4e5;                 %  Chord Reynoldsnumber
-flo.nkrit= 0.15;%            %  critical amplification exponent for transition
+flo.Re= 1500000;                 %  Chord Reynoldsnumber
+flo.nkrit= 9;%            %  critical amplification exponent for transition
 
 %  Tripping
 %  --------
 tri.active=[ false;...         %  tripping on suction side 
              false];           %  tripping on pressure side 
 
-tri.x = [ 0.145;...            %  tripping location on suction side
-          0.29 ]*prf.c;        %  tripping location on pressure side
+tri.x = [ 0.71006;...            %  tripping location on suction side
+          0.78644 ]*prf.c;        %  tripping location on pressure side
     
 %  Blowing
 %  --------
@@ -39,12 +41,12 @@ blo.Mode=1;     % determines how the blowing regions are defined
 % blo.Mode=3 -> Arclength mode 
 
 % Mode 1 and 2
-blo.L= {[0.1]*prf.c;              %  length of blowing area: suction side
-        [0.1]*prf.c;};            %  length of blowing area: pressure side
-blo.x= {[0.4]*prf.c;              %  start/mid point of blowing area
-        [0.4]*prf.c;};             
-blo.A= {[0.005]*flo.Uinfty;       % blowing intensity of each region 
-        [0.005]*flo.Uinfty};
+blo.L= {[1.00]*prf.c;              %  length of blowing area: suction side
+        [0.2]*prf.c;};            %  length of blowing area: pressure side
+blo.x= {[0.0]*prf.c;              %  start/mid point of blowing area
+        [0.79]*prf.c;};             
+blo.A= {[0.000]*flo.Uinfty;       % blowing intensity of each region 
+        [0.001]*flo.Uinfty};
 
 % Mode 3      
 % advanced determination of blowing region if blo.Mode==3

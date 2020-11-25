@@ -55,6 +55,12 @@ parameters  % load parameters for calculation
     %-> can be committed by next use of airfoil function as input to get shorter calculation process
 [sol,prf,flo,~,~,~,~]=airfoil(prf,flo,tri,blo,eng,InvRef);
 
+PlotStuff(prf,flo.wake,sol, 'Cp');
+PlotStuff(prf,flo.wake,sol, 'tau');
+
+PlotProfile( prf, flo.wake,sol,flo,1) 
+
+%%
 %---------------------------------------------------------
 
 % set reference case without uniform blowing
@@ -63,16 +69,19 @@ CL_ref=sol.CL; CD_ref=sol.Cdrag; tr_ref=sol.tran.x;ratio_ref=CL_ref/CD_ref;
 % use tripping at transition location of uncontrolled case 
 %   ->neglect effect of blowing on transition, uncomment to consider transition changes
 solRef=sol;prfRef=prf;
-tri.active=[true;true];
-tri.x=solRef.tran.x;
-flo.nkrit=9;
+%tri.active=[true;true];
+%tri.x=solRef.tran.x;
+%flo.nkrit=9;
 
 % turn on uniform blowing
 blo.active=true;                     
 [solB,prfB,flo,~,~,~,~]=airfoil(prf,flo,tri,blo,eng,InvRef);
 
 % compare
-BlowingComparison(prf,flo.wake,sol,prfB,solB,1,'delta');
+BlowingComparison(prf,flo.wake,sol,flo,prfB,solB,1,'delta');
+PlotProfile( prfB, flo.wake,solB,flo,1) 
+PlotStuff(prfB,flo.wake,solB, 'Cp');
+PlotStuff(prfB,flo.wake,solB, 'tau');
 
 % %% Plotting Functions avaivable 
 %

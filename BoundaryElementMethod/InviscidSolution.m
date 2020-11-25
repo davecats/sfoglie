@@ -22,7 +22,11 @@ flo.ui = flo.Uinfty*cos(flo.alfa);
 flo.vi = flo.Uinfty*sin(flo.alfa);
 
 % Calculate NACA profile nodes
-prf = naca4(prf);
+if prf.provideGeometry 
+    prf = geometry(prf);
+else
+    prf = naca4(prf);
+end
 
 % import profile Nodes in case of a given list
 % data=load('e387_N160.txt');

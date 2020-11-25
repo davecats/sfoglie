@@ -1,4 +1,4 @@
-function [Tab ] = BlowingComparison(prf,wake,sol,prfB,solB,section,Quantity,OverArclength )
+function [Tab ] = BlowingComparison(prf,wake,sol,flo,prfB,solB,section,Quantity,OverArclength )
 %BLOWINGCOMPARISON gives Plots of Comparison between blowing case and case without blowing
 %                  section=0: only gives overview plot (default)
 %                  section=1: gives comparison plots for suction side 
@@ -19,9 +19,9 @@ function [Tab ] = BlowingComparison(prf,wake,sol,prfB,solB,section,Quantity,Over
 %                       'ctau'  - shear stress coefficient
 
 
-if nargin==5; section=0; end
-if nargin==6; Quantity='Cf'; end
-if nargin<8; OverArclength=false; end
+if nargin==6; section=0; end
+if nargin==7; Quantity='Cf'; end
+if nargin<9; OverArclength=false; end
 
 % reduction in global values
 
@@ -46,7 +46,7 @@ lls=0.03*prf.c;
 endU= xUtr - lls*prf.panels.n(:,sol.iTran(1));
 endL= xLtr - lls*prf.panels.n(:,sol.iTran(2)-1);
 
-fig1=PlotProfile( prfB,wake,solB, 4) ;
+fig1=PlotProfile( prfB,wake,solB, flo, 4) ;
 line([xUtr(1) endU(1)]  , [xUtr(2) endU(2)],'color','k','Linewidth',0.7);
 line([xLtr(1) endL(1)]  , [xLtr(2) endL(2)],'color','k','Linewidth',0.7);
 

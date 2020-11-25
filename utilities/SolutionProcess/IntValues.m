@@ -31,8 +31,8 @@ end
 % numerical integration
 FR_x= 2*NumInt(fR(:,1),s,mode); % factor 2 because of tau=cf/2
 FR_y= 2*NumInt(fR(:,2),s,mode);
-FP_x= NumInt(fp(:,1),s,mode);
-FP_y= NumInt(fp(:,2),s,mode);
+FP_x= 2*NumInt(fp(:,1),s,mode);
+FP_y= 2*NumInt(fp(:,2),s,mode);
 
 
 % total force (add upp shear and pressure contribution)
@@ -45,11 +45,10 @@ FX=  Fx*cos(alfa) + Fy*sin(alfa);
 FY= -Fx*sin(alfa) + Fy*cos(alfa);
 
 % output values
-CL=FY;
+CL=FY/2;
 Cw=FX;
-CwR=  FR_x*cos(alfa);
+CwR=FR_x*cos(alfa);
 Cwp=Cw-CwR;
-
 
 end
 
