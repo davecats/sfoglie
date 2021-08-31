@@ -4,11 +4,11 @@
 
 %  profile and panels
 %  ------------------
-prf.provideGeometry = true;         %  provide geometry or use NACA 4-digit
+prf.provideGeometry = false;         %  provide geometry or use NACA 4-digit
 prf.geometryFilename = 'AF_WT.dat'; % geometry file
 prf.naca = [4 4 1 2];               %  NACA 4-digit profile 
 prf.noSkew  = true;                 %  if true neglects profile skewness
-prf.sharpTE = false;                %  if true modifies NACA prf for sharp trailing edge
+prf.sharpTE = true;                %  if true modifies NACA prf for sharp trailing edge
 prf.c = 1;                          %  prf chord length 
 prf.M = 80*2;                       %  number of nodes on each surface (total number of nodes is 2M-1)
 prf.pmode = 2;                      %  panelization mode: 1 (more nodes in middle) 2 (more nodes at LE and TE)
