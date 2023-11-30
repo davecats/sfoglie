@@ -13,7 +13,7 @@ profile.c = 1;
 profile.N = 500; %(Oben und unten N-1 Panels + Hinterseite) -> M=1+2(N-1)=2N-1 Randelemente
 profile.alfa = 2*pi/180;
 profile.noSkew = true;
-NACA = [0 0 1 2];
+NACA = [4 4 1 2];
 
 %% Create profile and panels
 profile = naca4(profile,NACA);

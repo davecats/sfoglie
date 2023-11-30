@@ -31,5 +31,5 @@ function centroid = computeCentreOfPressure(profile,cp)
     
     % Centre of pressure
     centroid.x = -Mxtot(3)/Fytot(2);
-    centroid.y = -Mytot(3)/Fxtot(1);
+    centroid.y =  Mytot(3)/Fxtot(1);
 end
